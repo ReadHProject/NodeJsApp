@@ -5,10 +5,20 @@ import { getDataUri } from "../utils/feature.js";
 //GET ALL PRODUCTS
 export const getAllProductsController = async (req, res) => {
   try {
-    const products = await productModel.find({});
+    const { keyword, category } = req.query;
+    const products = await productModel
+      .find({
+        name: {
+          $regex: keyword ? keyword : "",
+          $options: "i",
+        },
+        // category: category ? category : undefined,
+      })
+      .populate("category");
     return res.status(200).send({
       success: true,
       message: "All Products Fetched Successfully",
+      totalProducts: products.length,
       products,
     });
   } catch (error) {
@@ -16,6 +26,25 @@ export const getAllProductsController = async (req, res) => {
     return res.status(500).send({
       success: false,
       message: `Error in Get All Products API: ${console.log(error)}`,
+    });
+  }
+};
+
+//GET TOP PRODUCT
+export const getTopProductsController = async (req, res) => {
+  try {
+    const products = await productModel.find({}).sort({ rating: -1 }).limit(3);
+    return res.status(200).send({
+      success: true,
+      message: "Top 3 Products Fetched Successfully",
+      totalProducts: products.length,
+      products,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
+      success: false,
+      message: `Error in Get Top Products API: ${console.log(error)}`,
     });
   }
 };
@@ -324,4 +353,69 @@ export const deleteProductController = async (req, res) => {
 };
 
 //CREATE PRODUCT REVIEW AND COMMENT
-export const productReviewController = async (req, res) => {};
+export const productReviewController = async (req, res) => {
+  try {
+    const { comment, rating } = req.body;
+
+    //FIND PRODUCT
+    const product = await productModel.findById(req.params.id);
+
+    //VALIDATION
+    if (!product) {
+      return res.status(404).send({
+        success: false,
+        message: "Product Not Found",
+      });
+    }
+
+    //CHECK PREVIOUS REVIEW
+    const alreadyReviewed = product.reviews.find(
+      (r) => r.user.toSting() === req.user._id.toString()
+    );
+
+    //VALIDATION
+    if (alreadyReviewed) {
+      return res.status(400).send({
+        success: false,
+        message: "Product Already Reviewed",
+      });
+    }
+
+    //REVIEW OBJECT
+    const review = {
+      name: req.user.name,
+      rating: Number(rating),
+      comment,
+      user: req.user._id,
+    };
+
+    //PASSING REVIEW OBJECT TO REVIEW ARRAY
+    product.reviews.push(review);
+    //NO. OF REVIEWS
+    product.numReviews = product.reviews.length;
+    product.rating =
+      product.reviews.reduce((acc, item) => item.rating + acc, 0) /
+      product.reviews.length;
+
+    //SAVE
+    await product.save();
+    return res.status(200).send({
+      success: true,
+      message: "Product Reviewed Successfully",
+    });
+  } catch (error) {
+    console.log(error);
+    //Cast Error || Object Id
+    if (error.name === "CastError") {
+      return res.status(500).send({
+        success: false,
+        message: `Invalid Id`,
+      });
+    }
+    return res.status(500).send({
+      success: false,
+      message: `Error in Create Product API: ${console.log(error)}`,
+      error,
+    });
+  }
+};

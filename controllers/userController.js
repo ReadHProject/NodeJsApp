@@ -373,11 +373,11 @@ export const passwordResetOtpController = async (req, res) => {
       from: "My EcommerceApp <onboarding@resend.dev>",
       to: [email],
       subject: "Your OTP Code",
-      html: `<p>Your OTP is: <strong>${otp}</strong></p><p>This code will expire in 5 minutes.</p>`,
+      html: `<p>Your OTP is: <strong>${otp}</strong></p><p>This code will expire in 10 minutes.</p>`,
     });
 
     req.session.otp = otp;
-    req.session.otpExpires = Date.now() + 5 * 60 * 1000;
+    req.session.otpExpires = Date.now() + 10 * 60 * 1000; //10 Minutes
 
     return res.status(200).send({
       success: true,
@@ -398,7 +398,17 @@ export const passwordResetOtpController = async (req, res) => {
 export const verifyOtpController = async (req, res) => {
   try {
     //GET OTP
-    const { otp } = req.body;
+    const { otp, newPassword } = req.body;
+
+    const user = await userModel.findById(req.user._id);
+
+    //VALIDATION
+    if (!newPassword || !otp) {
+      return res.status(500).send({
+        success: false,
+        message: "Please provide all fields",
+      });
+    }
 
     if (!req.session.otp || !req.session.otpExpires) {
       return res.status(400).send({
@@ -415,12 +425,14 @@ export const verifyOtpController = async (req, res) => {
       });
     }
 
-    console.log(otp);
-    console.log(req.session.otp);
+    // console.log(otp);
+    // console.log(req.session.otp);
     if (otp === req.session.otp) {
+      user.password = newPassword;
+      await user.save();
       return res.status(200).send({
         success: true,
-        message: "OTP verified successfully",
+        message: "Password Reset Successfully",
       });
     } else {
       return res.status(400).send({

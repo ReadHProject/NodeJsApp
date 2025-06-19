@@ -7,6 +7,8 @@ import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import cloudinary from "cloudinary";
 import Stripe from "stripe";
+import helmet from "helmet";
+import mongoSanitize from "express-mongo-sanitize";
 
 import connectDB from "./config/db.js";
 
@@ -30,10 +32,17 @@ cloudinary.v2.config({
 const app = express();
 
 //Middlewares
+app.use(helmet()); // security middleware
 app.use(morgan("dev")); // get the API request detail on terminal
 app.use(express.json()); //json middleware which express own middleware and use to receive json data
+app.use(express.urlencoded({ extended: true })); //urlencoded middleware
 app.use(cors()); // for Cross origin support
-app.use(cookieParser());
+app.use(cookieParser()); // for cookie parser
+// app.use(
+//   mongoSanitize({
+//     replaceWith: "_", // Replace unsafe characters
+//   })
+// ); // security middleware
 
 // Setup session for OTP (expires in 5 minutes)
 app.use(
