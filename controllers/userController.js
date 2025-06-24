@@ -427,7 +427,7 @@ export const verifyOtpController = async (req, res) => {
 
     // console.log(otp);
     // console.log(req.session.otp);
-    if (otp === req.session.otp) {
+    if (otp.toString() == req.session.otp.toString()) {
       user.password = newPassword;
       await user.save();
       return res.status(200).send({
