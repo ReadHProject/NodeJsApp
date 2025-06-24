@@ -438,6 +438,7 @@ export const verifyOtpController = async (req, res) => {
       return res.status(400).send({
         success: false,
         message: "Invalid OTP",
+        otp: req.session.otp,
       });
     }
   } catch (error) {
