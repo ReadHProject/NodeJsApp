@@ -267,8 +267,10 @@ export const updateProfilePicController = async (req, res) => {
     //GET FILE FROM CLIENT(USER) PHOTO
     const file = getDataUri(req.file);
 
-    //DELETE PREVIOUS PROFILE IMAGE
-    await cloudinary.v2.uploader.destroy(user.profilePic.public_id);
+    if (user.profilePic?.public_id) {
+      //DELETE PREVIOUS PROFILE IMAGE
+      await cloudinary.v2.uploader.destroy(user.profilePic.public_id);
+    }
 
     //UPDATE PROFILE IMAGE
     const cdb = await cloudinary.v2.uploader.upload(file.content);
