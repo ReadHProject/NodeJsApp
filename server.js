@@ -61,7 +61,7 @@ app.use(
 
 app.use(
   cors({
-    origin: "http://localhost:8080", // your frontend address
+    origin: "http://localhost:8081", // your frontend address
     credentials: true, // allow cookies
   })
 );
