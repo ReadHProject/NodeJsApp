@@ -10,6 +10,9 @@ const storage = multer.memoryStorage(); //use to create a temporary storage in a
 // Makes the file available in req.file inside your route
 export const singleUpload = multer({ storage }).single("file"); // if key value pair is same like storage:storage then we can write it only one time
 
+//multipleUpload
+export const multipleUpload = multer({ storage }).array("files", 10); // allow up to 10 files
+
 // | Code Part                | Meaning                                            |
 // | ------------------------ | -------------------------------------------------- |
 // | `multer.memoryStorage()` | Store file in memory instead of saving to disk     |

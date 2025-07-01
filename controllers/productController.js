@@ -87,47 +87,89 @@ export const getSingleProductController = async (req, res) => {
 };
 
 //CREATE PRODUCT
+// export const createProductController = async (req, res) => {
+//   try {
+//     const { name, description, price, category, stock } = req.body;
+
+//     //VALIDATION
+//     // if (!name || !description || !price || !category || !stock) {
+//     //   return res.status(500).send({
+//     //     success: false,
+//     //     message: "Please provide all fields",
+//     //   });
+//     // }
+
+//     // console.log(req.file);
+//     if (!req.file) {
+//       return res.status(500).send({
+//         success: false,
+//         message: "Please provide product images",
+//       });
+//     }
+
+//     //GET FILE FROM CLIENT
+//     const file = getDataUri(req.file);
+
+//     //UPLOAD FILE TO CLOUDINARY
+//     const cdb = await cloudinary.v2.uploader.upload(file.content);
+
+//     //CREATE PRODUCT
+//     const image = {
+//       public_id: cdb.public_id,
+//       url: cdb.secure_url,
+//     };
+
+//     //CREATE PRODUCT
+//     const product = await productModel.create({
+//       name,
+//       description,
+//       price,
+//       category,
+//       stock,
+//       images: [image],
+//     });
+//     return res.status(201).send({
+//       success: true,
+//       message: "Product Created Successfully",
+//       product,
+//     });
+//   } catch (error) {
+//     console.log(error);
+//     return res.status(500).send({
+//       success: false,
+//       message: `Error in Create Product API: ${console.log(error)}`,
+//       error,
+//     });
+//   }
+// };
+
 export const createProductController = async (req, res) => {
   try {
     const { name, description, price, category, stock } = req.body;
 
-    //VALIDATION
-    // if (!name || !description || !price || !category || !stock) {
-    //   return res.status(500).send({
-    //     success: false,
-    //     message: "Please provide all fields",
-    //   });
-    // }
-
-    // console.log(req.file);
-    if (!req.file) {
-      return res.status(500).send({
-        success: false,
-        message: "Please provide product images",
-      });
+    if (!req.files || req.files.length === 0) {
+      return res
+        .status(400)
+        .send({ success: false, message: "No images uploaded" });
     }
 
-    //GET FILE FROM CLIENT
-    const file = getDataUri(req.file);
+    const images = [];
 
-    //UPLOAD FILE TO CLOUDINARY
-    const cdb = await cloudinary.v2.uploader.upload(file.content);
+    for (let file of req.files) {
+      const fileUri = getDataUri(file);
+      const uploaded = await cloudinary.v2.uploader.upload(fileUri.content);
+      images.push({ public_id: uploaded.public_id, url: uploaded.secure_url });
+    }
 
-    //CREATE PRODUCT
-    const image = {
-      public_id: cdb.public_id,
-      url: cdb.secure_url,
-    };
-
-    //CREATE PRODUCT
     const product = await productModel.create({
       name,
       description,
       price,
       category,
       stock,
-      images: [image],
+      images,
     });
+
     return res.status(201).send({
       success: true,
       message: "Product Created Successfully",
@@ -137,7 +179,7 @@ export const createProductController = async (req, res) => {
     console.log(error);
     return res.status(500).send({
       success: false,
-      message: `Error in Create Product API: ${console.log(error)}`,
+      message: "Error in Create Product API",
       error,
     });
   }
