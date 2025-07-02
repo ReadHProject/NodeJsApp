@@ -122,7 +122,7 @@ export const updateCategoryController = async (req, res) => {
     //UPDATE PRODUCT CATEGORY
     for (let i = 0; i < products.length; i++) {
       const product = products[i];
-      product.category = updateCategory;
+      product.category = category._id;
       await product.save();
     }
 
