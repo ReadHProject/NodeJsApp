@@ -4,7 +4,10 @@ import { getDataUri } from "../utils/feature.js";
 import path from "path";
 import fs from "fs";
 import { v4 as uuidv4 } from "uuid";
+import { fileURLToPath } from "url";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 //GET ALL PRODUCTS
 export const getAllProductsController = async (req, res) => {
   try {
