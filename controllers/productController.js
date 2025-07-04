@@ -179,11 +179,11 @@ export const createProductController = async (req, res) => {
       const ext = path.extname(file.originalname);
       const uniqueName = `${uuidv4()}${ext}`;
       const filePath = path.join(uploadPath, uniqueName);
-      // fs.writeFileSync(filePath, file.buffer);
+      const fileNameOnly = file.filename || uniqueName; // Use multer-generated filename or fallback to your uniqueName
 
       images.push({
         localPath: `/uploads/products/${file.filename}`,
-        name: file.originalname,
+        name: fileNameOnly,
       });
     }
 
@@ -191,6 +191,15 @@ export const createProductController = async (req, res) => {
     if (colors) {
       try {
         colorsArray = JSON.parse(colors);
+        // Add the image path to each color's images
+        colorsArray = colorsArray.map((color) => {
+          if (Array.isArray(color.images)) {
+            color.images = color.images.map(
+              (img) => `/uploads/products/${img}`
+            );
+          }
+          return color;
+        });
       } catch (err) {
         return res.status(400).send({
           success: false,
