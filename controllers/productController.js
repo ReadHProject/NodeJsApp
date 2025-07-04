@@ -159,40 +159,57 @@ export const createProductController = async (req, res) => {
         .send({ success: false, message: "No images uploaded" });
     }
 
+    // Step 1: Prepare image maps
     const generalImages = [];
-    const colorImagesMap = {}; // e.g., { red: [urls], blue: [urls] }
+    const colorImagesMap = {}; // e.g., { red: [url1, url2], blue: [...] }
 
     for (let file of req.files) {
-      const url = `/uploads/products/${file.filename}`;
-      const baseName = path.basename(
-        file.filename,
-        path.extname(file.filename)
-      );
-      const colorKey = baseName.split("_")[0];
+      const filename = file.filename;
+      const url = `/uploads/products/${filename}`;
+      const baseName = path.basename(filename, path.extname(filename)); // red_0, general_1, etc.
+      const [prefix] = baseName.split("_"); // "red", "general"
 
-      if (!colorImagesMap[colorKey]) colorImagesMap[colorKey] = [];
-      colorImagesMap[colorKey].push(url);
+      if (
+        prefix &&
+        ["red", "blue", "black", "white", "green", "yellow"].includes(prefix)
+      ) {
+        if (!colorImagesMap[prefix]) colorImagesMap[prefix] = [];
+        colorImagesMap[prefix].push(url);
+      } else {
+        generalImages.push({
+          public_id: filename,
+          url,
+        });
+      }
     }
 
-    const parsedColors = colors ? JSON.parse(colors) : [];
+    // Step 2: Process colors array from frontend
+    let parsedColors = [];
 
+    try {
+      parsedColors = colors ? JSON.parse(colors) : [];
+    } catch (err) {
+      return res.status(400).send({
+        success: false,
+        message: "Invalid JSON format for colors",
+      });
+    }
+
+    // Step 3: Attach images to respective colors
     const colorsArray = parsedColors.map((color) => {
+      const images = colorImagesMap[color.colorId] || [];
+      if (images.length !== 5) {
+        throw new Error(
+          `Color ${color.colorName} must have exactly 5 images (currently ${images.length})`
+        );
+      }
       return {
         ...color,
-        images: colorImagesMap[color.colorId] || [],
+        images,
       };
     });
 
-    const generalKeys = Object.keys(colorImagesMap);
-
-    generalKeys.forEach((key) => {
-      if (!parsedColors.some((c) => c.colorId === key)) {
-        colorImagesMap[key].forEach((url) => {
-          generalImages.push({ public_id: path.basename(url), url });
-        });
-      }
-    });
-
+    // Step 4: Create product
     const product = await productModel.create({
       name,
       description,
