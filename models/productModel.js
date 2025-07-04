@@ -42,13 +42,13 @@ const ColorSchema = new mongoose.Schema({
   },
   images: {
     type: [String],
-    validate: {
-      validator: function (arr) {
-        // Ensure Greater than 5 images per color
-        return arr.length > 5;
-      },
-      message: "Each color must have not more than 5 images.",
-    },
+    // validate: {
+    //   validator: function (arr) {
+    //     // Ensure Greater than 5 images per color
+    //     return arr.length > 5;
+    //   },
+    //   message: "Each color must have not more than 5 images.",
+    // },
     required: true,
   },
 });
