@@ -171,10 +171,12 @@ export const createProductController = async (req, res) => {
     });
 
     const generalImage = req.files["generalImage"]
-      ? {
-          public_id: req.files["generalImage"][0].filename,
-          url: `/uploads/products/${req.files["generalImage"][0].filename}`,
-        }
+      ? [
+          {
+            public_id: req.files["generalImage"][0].filename,
+            url: `/uploads/products/${req.files["generalImage"][0].filename}`,
+          },
+        ]
       : null;
 
     const product = await productModel.create({
@@ -187,14 +189,14 @@ export const createProductController = async (req, res) => {
       colors: colorImages,
     });
 
-    return res.status(201).json({
+    return res.status(201).send({
       success: true,
       message: "Product Created Successfully",
       product,
     });
   } catch (err) {
     console.log(err);
-    res.status(500).json({
+    res.status(500).send({
       success: false,
       message: err.message,
     });
