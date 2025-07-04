@@ -23,6 +23,36 @@ const reviewSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+//COLOR AND IMAGE MODEL
+const ColorSchema = new Schema({
+  colorId: {
+    type: String,
+    required: true,
+    description: 'Unique identifier for the color (e.g., "white", "black")',
+  },
+  colorName: {
+    type: String,
+    required: true,
+    description: 'Human-readable name (e.g., "White", "Black")',
+  },
+  colorCode: {
+    type: String,
+    required: true,
+    description: 'Hex code or other representation (e.g., "#FFFFFF")',
+  },
+  images: {
+    type: [String],
+    validate: {
+      validator: function (arr) {
+        // Ensure exactly 5 images per color
+        return arr.length === 5;
+      },
+      message: "Each color must have exactly 5 images.",
+    },
+    required: true,
+  },
+});
+
 //PRODUCT MODEL
 const productSchema = new mongoose.Schema(
   {
@@ -66,6 +96,16 @@ const productSchema = new mongoose.Schema(
     numReviews: {
       type: Number,
       default: 0,
+    },
+    colors: {
+      type: [ColorSchema],
+      validate: {
+        validator: function (arr) {
+          // You could enforce at least one color
+          return arr.length > 0;
+        },
+        message: "A product must have at least one color option.",
+      },
     },
   },
   { timestamps: true }

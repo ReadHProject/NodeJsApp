@@ -1,6 +1,9 @@
 import productModel from "../models/productModel.js";
 import cloudinary from "cloudinary";
 import { getDataUri } from "../utils/feature.js";
+import path from "path";
+import fs from "fs";
+import { v4 as uuidv4 } from "uuid";
 
 //GET ALL PRODUCTS
 export const getAllProductsController = async (req, res) => {
@@ -145,7 +148,7 @@ export const getSingleProductController = async (req, res) => {
 
 export const createProductController = async (req, res) => {
   try {
-    const { name, description, price, category, stock } = req.body;
+    const { name, description, price, category, stock, colors } = req.body;
 
     if (!req.files || req.files.length === 0) {
       return res
@@ -153,12 +156,32 @@ export const createProductController = async (req, res) => {
         .send({ success: false, message: "No images uploaded" });
     }
 
+    // const images = [];
+
+    // for (let file of req.files) {
+    //   const fileUri = getDataUri(file);
+    //   const uploaded = await cloudinary.v2.uploader.upload(fileUri.content);
+    //   images.push({ public_id: uploaded.public_id, url: uploaded.secure_url });
+    // }
+
     const images = [];
+    const uploadPath = path.join(__dirname, "../uploads"); // Create this folder manually or programmatically
+
+    // Ensure folder exists
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
 
     for (let file of req.files) {
-      const fileUri = getDataUri(file);
-      const uploaded = await cloudinary.v2.uploader.upload(fileUri.content);
-      images.push({ public_id: uploaded.public_id, url: uploaded.secure_url });
+      const ext = path.extname(file.originalname);
+      const uniqueName = `${uuidv4()}${ext}`;
+      const filePath = path.join(uploadPath, uniqueName);
+      fs.writeFileSync(filePath, file.buffer);
+
+      images.push({
+        localPath: `/uploads/${uniqueName}`,
+        name: uniqueName,
+      });
     }
 
     const product = await productModel.create({
@@ -167,7 +190,8 @@ export const createProductController = async (req, res) => {
       price,
       category,
       stock,
-      images,
+      images, // For general images
+      colors: JSON.parse(colors), // You'll send the colors array as a JSON string
     });
 
     return res.status(201).send({
