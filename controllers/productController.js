@@ -179,11 +179,11 @@ export const createProductController = async (req, res) => {
       const ext = path.extname(file.originalname);
       const uniqueName = `${uuidv4()}${ext}`;
       const filePath = path.join(uploadPath, uniqueName);
-      fs.writeFileSync(filePath, file.buffer);
+      // fs.writeFileSync(filePath, file.buffer);
 
       images.push({
-        localPath: `/uploads/${uniqueName}`,
-        name: uniqueName,
+        localPath: `/uploads/products/${file.filename}`,
+        name: file.originalname,
       });
     }
 
