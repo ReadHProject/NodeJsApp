@@ -159,69 +159,42 @@ export const createProductController = async (req, res) => {
         .send({ success: false, message: "No images uploaded" });
     }
 
-    const parsedColors = colors ? JSON.parse(colors) : [];
+    const parsedColors = JSON.parse(colors); // colors is stringified JSON from React Native
 
-    const generalImages = [];
-    const colorImagesMap = {}; // { red: [url1, url2], blue: [url3] }
+    const colorImagesMap = {};
 
+    // Map uploaded files to their color based on filename
     for (let file of req.files) {
-      const url = `/uploads/products/${file.filename}`;
       const baseName = path.basename(
         file.filename,
         path.extname(file.filename)
-      );
-      const prefix = baseName.split("_")[0].toLowerCase();
+      ); // e.g., "white_0"
+      const colorKey = baseName.split("_")[0]; // e.g., "white"
 
-      console.log("Uploaded file prefix:", prefix);
-
-      const matchedColor = parsedColors.find(
-        (color) => color.colorId.toLowerCase() === prefix
-      );
-
-      const key = matchedColor ? matchedColor.colorId.toLowerCase() : prefix;
-
-      if (!colorImagesMap[key]) colorImagesMap[key] = [];
-      colorImagesMap[key].push(url);
+      const fileUrl = `/uploads/products/${file.filename}`;
+      if (!colorImagesMap[colorKey]) {
+        colorImagesMap[colorKey] = [];
+      }
+      colorImagesMap[colorKey].push(fileUrl);
     }
 
     const colorsArray = parsedColors.map((color) => {
-      const images = colorImagesMap[color.colorId.toLowerCase()] || [];
-
-      console.log(
-        `Color: ${color.colorName}, Expected colorId: ${color.colorId}, Found images:`,
-        images
-      );
-
-      if (images.length !== 5) {
+      const imagesForColor = colorImagesMap[color.colorId.toLowerCase()] || [];
+      if (imagesForColor.length !== 5) {
         throw new Error(
-          `Color ${color.colorName} must have exactly 5 images (found ${images.length})`
+          `Color ${color.colorName} must have exactly 5 images (found ${imagesForColor.length})`
         );
       }
-
-      return {
-        ...color,
-        images,
-      };
+      return { ...color, images: imagesForColor };
     });
 
-    // Handle general images (files that don't match any colorId)
-    const usedKeys = parsedColors.map((c) => c.colorId);
-    Object.entries(colorImagesMap).forEach(([key, urls]) => {
-      if (!usedKeys.includes(key)) {
-        urls.forEach((url) => {
-          generalImages.push({ public_id: path.basename(url), url });
-        });
-      }
-    });
-
-    // Step 4: Create product
     const product = await productModel.create({
       name,
       description,
       price,
       category,
       stock,
-      images: generalImages,
+      images: [], // General images skipped in this case
       colors: colorsArray,
     });
 
