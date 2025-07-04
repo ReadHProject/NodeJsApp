@@ -42,6 +42,7 @@ const ColorSchema = new mongoose.Schema({
   },
   images: {
     type: [String],
+    required: true,
     // validate: {
     //   validator: function (arr) {
     //     // Ensure Greater than 5 images per color
@@ -49,7 +50,6 @@ const ColorSchema = new mongoose.Schema({
     //   },
     //   message: "Each color must have not more than 5 images.",
     // },
-    required: true,
   },
 });
 

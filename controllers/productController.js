@@ -159,33 +159,37 @@ export const createProductController = async (req, res) => {
         .send({ success: false, message: "No images uploaded" });
     }
 
-    const parsedColors = JSON.parse(colors); // colors is stringified JSON from React Native
-
-    const colorImagesMap = {};
-
-    // Map uploaded files to their color based on filename
-    for (let file of req.files) {
-      const baseName = path.basename(
-        file.filename,
-        path.extname(file.filename)
-      ); // e.g., "white_0"
-      const colorKey = baseName.split("_")[0]; // e.g., "white"
-
-      const fileUrl = `/uploads/products/${file.filename}`;
-      if (!colorImagesMap[colorKey]) {
-        colorImagesMap[colorKey] = [];
-      }
-      colorImagesMap[colorKey].push(fileUrl);
+    if (!colors) {
+      return res.status(400).send({
+        success: false,
+        message: "Colors are required",
+      });
     }
 
-    const colorsArray = parsedColors.map((color) => {
-      const imagesForColor = colorImagesMap[color.colorId.toLowerCase()] || [];
-      if (imagesForColor.length !== 5) {
+    const parsedColors = JSON.parse(colors);
+
+    const colorImagesMap = {};
+    for (let file of req.files) {
+      const filePath = `/uploads/products/${file.filename}`;
+      const baseName = file.filename.split("_")[0].toLowerCase(); // expects filenames like red_1.jpg
+      if (!colorImagesMap[baseName]) colorImagesMap[baseName] = [];
+      colorImagesMap[baseName].push(filePath);
+    }
+
+    const finalColors = parsedColors.map((color) => {
+      const colorId = color.colorId.toLowerCase();
+      const images = colorImagesMap[colorId] || [];
+      if (images.length !== 5) {
         throw new Error(
-          `Color ${color.colorName} must have exactly 5 images (found ${imagesForColor.length})`
+          `Color ${color.colorName} must have exactly 5 images (found ${images.length})`
         );
       }
-      return { ...color, images: imagesForColor };
+      return {
+        colorId: color.colorId,
+        colorName: color.colorName,
+        colorCode: color.colorCode,
+        images,
+      };
     });
 
     const product = await productModel.create({
@@ -194,8 +198,7 @@ export const createProductController = async (req, res) => {
       price,
       category,
       stock,
-      images: [], // General images skipped in this case
-      colors: colorsArray,
+      colors: finalColors, // ✅ no "images" field at top level
     });
 
     return res.status(201).send({
