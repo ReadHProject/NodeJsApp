@@ -31,6 +31,12 @@ cloudinary.v2.config({
 //Create a rest object (making a copy of express)
 const app = express();
 
+// ⬇ Add this to disable caching
+app.use((req, res, next) => {
+  res.set("Cache-Control", "no-store");
+  next();
+});
+
 //Middlewares
 app.use(helmet()); // security middleware
 app.use(morgan("dev")); // get the API request detail on terminal

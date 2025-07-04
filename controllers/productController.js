@@ -168,7 +168,7 @@ export const createProductController = async (req, res) => {
     // }
 
     const images = [];
-    const uploadPath = path.join(__dirname, "../uploads"); // Create this folder manually or programmatically
+    const uploadPath = path.join(__dirname, "../uploads/products"); // Create this folder manually or programmatically
 
     // Ensure folder exists
     if (!fs.existsSync(uploadPath)) {
