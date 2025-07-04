@@ -193,23 +193,6 @@ export const createProductController = async (req, res) => {
       }
     });
 
-    // for (const color of colorsArray) {
-    //   if (
-    //     !color.colorId ||
-    //     !color.colorName ||
-    //     !color.colorCode ||
-    //     !Array.isArray(color.images) ||
-    //     color.images.length !== 5
-    //   ) {
-    //     return res.status(400).send({
-    //       success: false,
-    //       message:
-    //         "Each color must have colorId, colorName, colorCode, and exactly 5 images.",
-    //       colorsArray,
-    //     });
-    //   }
-    // }
-
     const product = await productModel.create({
       name,
       description,
