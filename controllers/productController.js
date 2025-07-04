@@ -170,20 +170,27 @@ export const createProductController = async (req, res) => {
         file.filename,
         path.extname(file.filename)
       );
-      const prefix = baseName.split("_")[0]; // This is expecting the colorId in filename
+      const prefix = baseName.split("_")[0].toLowerCase();
 
-      // ✅ Fix: Match file prefix with colorId case-insensitively
+      console.log("Uploaded file prefix:", prefix);
+
       const matchedColor = parsedColors.find(
-        (color) => color.colorId.toLowerCase() === prefix.toLowerCase()
+        (color) => color.colorId.toLowerCase() === prefix
       );
-      const key = matchedColor ? matchedColor.colorId : prefix;
+
+      const key = matchedColor ? matchedColor.colorId.toLowerCase() : prefix;
 
       if (!colorImagesMap[key]) colorImagesMap[key] = [];
       colorImagesMap[key].push(url);
     }
 
     const colorsArray = parsedColors.map((color) => {
-      const images = colorImagesMap[color.colorId] || [];
+      const images = colorImagesMap[color.colorId.toLowerCase()] || [];
+
+      console.log(
+        `Color: ${color.colorName}, Expected colorId: ${color.colorId}, Found images:`,
+        images
+      );
 
       if (images.length !== 5) {
         throw new Error(
