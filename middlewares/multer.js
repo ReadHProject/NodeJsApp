@@ -13,16 +13,8 @@ import fs from "fs";
 
 // Define the storage engine
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadPath = path.join("uploads", "products");
-    fs.mkdirSync(uploadPath, { recursive: true }); // Ensure folder exists
-    cb(null, uploadPath);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname);
-    cb(null, file.fieldname + "-" + uniqueSuffix + ext);
-  },
+  destination: (req, file, cb) => cb(null, "uploads/products"),
+  filename: (req, file, cb) => cb(null, `${Date.now()}_${file.originalname}`),
 });
 export const singleUpload = multer({ storage }).single("file"); // if key value pair is same like storage:storage then we can write it only one time
 

@@ -159,36 +159,23 @@ export const createProductController = async (req, res) => {
         .send({ success: false, message: "No images uploaded" });
     }
 
-    if (!colors) {
-      return res.status(400).send({
-        success: false,
-        message: "Colors are required",
-      });
-    }
-
-    const parsedColors = JSON.parse(colors);
-
-    const colorImagesMap = {};
-    for (let file of req.files) {
-      const filePath = `/uploads/products/${file.filename}`;
-      const baseName = file.filename.split("_")[0].toLowerCase(); // expects filenames like red_1.jpg
-      if (!colorImagesMap[baseName]) colorImagesMap[baseName] = [];
-      colorImagesMap[baseName].push(filePath);
-    }
+    const parsedColors = JSON.parse(colors); // Colors without images yet
+    const uploadedFiles = req.files;
 
     const finalColors = parsedColors.map((color) => {
-      const colorId = color.colorId.toLowerCase();
-      const images = colorImagesMap[colorId] || [];
-      if (images.length !== 5) {
+      const matchingImages = uploadedFiles
+        .filter((file) => file.originalname.startsWith(color.colorId + "_"))
+        .map((file) => "/uploads/products/" + file.filename);
+
+      if (matchingImages.length !== 5) {
         throw new Error(
-          `Color ${color.colorName} must have exactly 5 images (found ${images.length})`
+          `Color ${color.colorName} must have exactly 5 images (found ${matchingImages.length})`
         );
       }
+
       return {
-        colorId: color.colorId,
-        colorName: color.colorName,
-        colorCode: color.colorCode,
-        images,
+        ...color,
+        images: matchingImages,
       };
     });
 
@@ -198,7 +185,7 @@ export const createProductController = async (req, res) => {
       price,
       category,
       stock,
-      colors: finalColors, // ✅ no "images" field at top level
+      colors: finalColors,
     });
 
     return res.status(201).send({
