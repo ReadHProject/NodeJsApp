@@ -24,7 +24,7 @@ const reviewSchema = new mongoose.Schema(
 );
 
 //COLOR AND IMAGE MODEL
-const ColorSchema = new Schema({
+const ColorSchema = new mongoose.Schema({
   colorId: {
     type: String,
     required: true,

@@ -10,7 +10,6 @@ import fs from "fs";
 // The file must come from a form field named "file" (this is important)
 // Stores the uploaded file in memory using the memoryStorage() method
 // Makes the file available in req.file inside your route
-export const singleUpload = multer({ storage }).single("file"); // if key value pair is same like storage:storage then we can write it only one time
 
 // Define the storage engine
 const storage = multer.diskStorage({
@@ -25,6 +24,7 @@ const storage = multer.diskStorage({
     cb(null, file.fieldname + "-" + uniqueSuffix + ext);
   },
 });
+export const singleUpload = multer({ storage }).single("file"); // if key value pair is same like storage:storage then we can write it only one time
 
 //multipleUpload
 export const multipleUpload = multer({ storage }).array("files", 50); // allow up to 10 files, // Increase limit if needed
