@@ -12,10 +12,30 @@ import fs from "fs";
 // Makes the file available in req.file inside your route
 
 // Define the storage engine
+// Storage configuration
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "uploads/products"),
-  filename: (req, file, cb) => cb(null, `${Date.now()}_${file.originalname}`),
+  destination: function (req, file, cb) {
+    cb(null, "uploads/products/");
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  },
 });
+
+// Multer instance with multiple fields
+export const uploadProductImages = multer({
+  storage,
+}).fields([
+  { name: "generalImage", maxCount: 1 }, // Single general image
+  { name: "red", maxCount: 10 },
+  { name: "blue", maxCount: 10 },
+  { name: "black", maxCount: 10 },
+  { name: "white", maxCount: 10 },
+  { name: "green", maxCount: 10 },
+  { name: "yellow", maxCount: 10 },
+]);
+
 export const singleUpload = multer({ storage }).single("file"); // if key value pair is same like storage:storage then we can write it only one time
 
 //multipleUpload

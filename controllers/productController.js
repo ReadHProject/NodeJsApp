@@ -151,54 +151,52 @@ export const getSingleProductController = async (req, res) => {
 
 export const createProductController = async (req, res) => {
   try {
-    const { name, description, price, category, stock, colors } = req.body;
+    const { name, description, price, stock, category, colors } = req.body;
 
-    if (!req.files || req.files.length === 0) {
-      return res
-        .status(400)
-        .send({ success: false, message: "No images uploaded" });
-    }
+    const parsedColors = JSON.parse(colors || "[]");
 
-    const parsedColors = JSON.parse(colors); // Colors without images yet
-    const uploadedFiles = req.files;
-
-    const finalColors = parsedColors.map((color) => {
-      const matchingImages = uploadedFiles
-        .filter((file) => file.originalname.startsWith(color.colorId + "_"))
-        .map((file) => "/uploads/products/" + file.filename);
-
-      if (matchingImages.length !== 5) {
+    const colorImages = parsedColors.map((color) => {
+      const uploadedImages = req.files[color.colorId] || [];
+      if (uploadedImages.length < 5) {
         throw new Error(
-          `Color ${color.colorName} must have exactly 5 images (found ${matchingImages.length})`
+          `Color ${color.colorName} must have at least 5 images (found ${uploadedImages.length})`
         );
       }
-
       return {
         ...color,
-        images: matchingImages,
+        images: uploadedImages.map(
+          (file) => `/uploads/products/${file.filename}`
+        ),
       };
     });
+
+    const generalImage = req.files["generalImage"]
+      ? {
+          public_id: req.files["generalImage"][0].filename,
+          url: `/uploads/products/${req.files["generalImage"][0].filename}`,
+        }
+      : null;
 
     const product = await productModel.create({
       name,
       description,
       price,
-      category,
       stock,
-      colors: finalColors,
+      category,
+      images: generalImage ? [generalImage] : [],
+      colors: colorImages,
     });
 
-    return res.status(201).send({
+    return res.status(201).json({
       success: true,
       message: "Product Created Successfully",
       product,
     });
-  } catch (error) {
-    console.log(error);
-    return res.status(500).send({
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({
       success: false,
-      message: "Error in Create Product API",
-      error,
+      message: err.message,
     });
   }
 };
