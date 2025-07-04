@@ -162,43 +162,49 @@ export const createProductController = async (req, res) => {
     const parsedColors = colors ? JSON.parse(colors) : [];
 
     const generalImages = [];
-    const colorImagesMap = {}; // { red: [url1, url2], blue: [...] }
+    const colorImagesMap = {}; // { red: [url1, url2], blue: [url3] }
 
-    // Map files based on filename (which has colorId in it from frontend)
-    req.files.forEach((file) => {
-      const filename = file.filename;
-      const url = `/uploads/products/${filename}`;
-
-      const baseName = path.basename(filename, path.extname(filename)); // e.g., red_0
-      const [prefix] = baseName.split("_");
-
-      const isColorImage = parsedColors.some(
-        (color) => color.colorId === prefix
+    for (let file of req.files) {
+      const url = `/uploads/products/${file.filename}`;
+      const baseName = path.basename(
+        file.filename,
+        path.extname(file.filename)
       );
+      const prefix = baseName.split("_")[0]; // This is expecting the colorId in filename
 
-      if (isColorImage) {
-        if (!colorImagesMap[prefix]) colorImagesMap[prefix] = [];
-        colorImagesMap[prefix].push(url);
-      } else {
-        generalImages.push({
-          public_id: filename,
-          url,
-        });
-      }
-    });
+      // ✅ Fix: Match file prefix with colorId case-insensitively
+      const matchedColor = parsedColors.find(
+        (color) => color.colorId.toLowerCase() === prefix.toLowerCase()
+      );
+      const key = matchedColor ? matchedColor.colorId : prefix;
 
-    // Build colors array with images
+      if (!colorImagesMap[key]) colorImagesMap[key] = [];
+      colorImagesMap[key].push(url);
+    }
+
     const colorsArray = parsedColors.map((color) => {
       const images = colorImagesMap[color.colorId] || [];
+
       if (images.length !== 5) {
         throw new Error(
           `Color ${color.colorName} must have exactly 5 images (found ${images.length})`
         );
       }
+
       return {
         ...color,
         images,
       };
+    });
+
+    // Handle general images (files that don't match any colorId)
+    const usedKeys = parsedColors.map((c) => c.colorId);
+    Object.entries(colorImagesMap).forEach(([key, urls]) => {
+      if (!usedKeys.includes(key)) {
+        urls.forEach((url) => {
+          generalImages.push({ public_id: path.basename(url), url });
+        });
+      }
     });
 
     // Step 4: Create product
