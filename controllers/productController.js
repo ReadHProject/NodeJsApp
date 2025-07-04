@@ -216,6 +216,7 @@ export const createProductController = async (req, res) => {
           success: false,
           message:
             "Each color must have colorId, colorName, colorCode, and exactly 5 images.",
+          colorsArray,
         });
       }
     }
