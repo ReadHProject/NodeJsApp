@@ -159,77 +159,56 @@ export const createProductController = async (req, res) => {
         .send({ success: false, message: "No images uploaded" });
     }
 
-    // const images = [];
-
-    // for (let file of req.files) {
-    //   const fileUri = getDataUri(file);
-    //   const uploaded = await cloudinary.v2.uploader.upload(fileUri.content);
-    //   images.push({ public_id: uploaded.public_id, url: uploaded.secure_url });
-    // }
-
-    const images = [];
-    const uploadPath = path.join(__dirname, "../uploads/products"); // Create this folder manually or programmatically
-
-    // Ensure folder exists
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
+    const generalImages = [];
+    const colorImagesMap = {}; // e.g., { red: [urls], blue: [urls] }
 
     for (let file of req.files) {
-      const ext = path.extname(file.originalname);
-      const uniqueName = `${uuidv4()}${ext}`;
-      const filePath = path.join(uploadPath, uniqueName);
+      const url = `/uploads/products/${file.filename}`;
+      const baseName = path.basename(
+        file.filename,
+        path.extname(file.filename)
+      );
+      const colorKey = baseName.split("_")[0];
 
-      // No need to manually write file since multer.diskStorage already saved it.
-
-      images.push({
-        public_id: uniqueName, // use the unique file name as public_id
-        url: `/uploads/products/${file.filename}`, // file.filename is what multer saves
-      });
+      if (!colorImagesMap[colorKey]) colorImagesMap[colorKey] = [];
+      colorImagesMap[colorKey].push(url);
     }
 
-    let colorsArray = [];
-    if (colors) {
-      try {
-        colorsArray = JSON.parse(colors);
-        // Add the image path to each color's images
-        colorsArray = colorsArray.map((color) => {
-          if (Array.isArray(color.images)) {
-            color.images = color.images.map(
-              (img) => `/uploads/products/${img}`
-            );
-          }
-          return color;
-        });
-      } catch (err) {
-        return res.status(400).send({
-          success: false,
-          message: "Invalid colors JSON format",
+    const parsedColors = colors ? JSON.parse(colors) : [];
+
+    const colorsArray = parsedColors.map((color) => {
+      return {
+        ...color,
+        images: colorImagesMap[color.colorId] || [],
+      };
+    });
+
+    const generalKeys = Object.keys(colorImagesMap);
+
+    generalKeys.forEach((key) => {
+      if (!parsedColors.some((c) => c.colorId === key)) {
+        colorImagesMap[key].forEach((url) => {
+          generalImages.push({ public_id: path.basename(url), url });
         });
       }
-    } else {
-      return res.status(400).send({
-        success: false,
-        message: "Colors field is required",
-      });
-    }
+    });
 
-    for (const color of colorsArray) {
-      if (
-        !color.colorId ||
-        !color.colorName ||
-        !color.colorCode ||
-        !Array.isArray(color.images) ||
-        color.images.length !== 5
-      ) {
-        return res.status(400).send({
-          success: false,
-          message:
-            "Each color must have colorId, colorName, colorCode, and exactly 5 images.",
-          colorsArray,
-        });
-      }
-    }
+    // for (const color of colorsArray) {
+    //   if (
+    //     !color.colorId ||
+    //     !color.colorName ||
+    //     !color.colorCode ||
+    //     !Array.isArray(color.images) ||
+    //     color.images.length !== 5
+    //   ) {
+    //     return res.status(400).send({
+    //       success: false,
+    //       message:
+    //         "Each color must have colorId, colorName, colorCode, and exactly 5 images.",
+    //       colorsArray,
+    //     });
+    //   }
+    // }
 
     const product = await productModel.create({
       name,
@@ -237,8 +216,8 @@ export const createProductController = async (req, res) => {
       price,
       category,
       stock,
-      images, // For general images
-      colors: JSON.parse(colors), // You'll send the colors array as a JSON string
+      images: generalImages,
+      colors: colorsArray,
     });
 
     return res.status(201).send({
