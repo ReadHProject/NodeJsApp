@@ -179,11 +179,12 @@ export const createProductController = async (req, res) => {
       const ext = path.extname(file.originalname);
       const uniqueName = `${uuidv4()}${ext}`;
       const filePath = path.join(uploadPath, uniqueName);
-      const fileNameOnly = file.filename || uniqueName; // Use multer-generated filename or fallback to your uniqueName
+
+      // No need to manually write file since multer.diskStorage already saved it.
 
       images.push({
-        localPath: `/uploads/products/${file.filename}`,
-        name: fileNameOnly,
+        public_id: uniqueName, // use the unique file name as public_id
+        url: `/uploads/products/${file.filename}`, // file.filename is what multer saves
       });
     }
 
