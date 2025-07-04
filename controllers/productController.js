@@ -187,6 +187,39 @@ export const createProductController = async (req, res) => {
       });
     }
 
+    let colorsArray = [];
+    if (colors) {
+      try {
+        colorsArray = JSON.parse(colors);
+      } catch (err) {
+        return res.status(400).send({
+          success: false,
+          message: "Invalid colors JSON format",
+        });
+      }
+    } else {
+      return res.status(400).send({
+        success: false,
+        message: "Colors field is required",
+      });
+    }
+
+    for (const color of colorsArray) {
+      if (
+        !color.colorId ||
+        !color.colorName ||
+        !color.colorCode ||
+        !Array.isArray(color.images) ||
+        color.images.length !== 5
+      ) {
+        return res.status(400).send({
+          success: false,
+          message:
+            "Each color must have colorId, colorName, colorCode, and exactly 5 images.",
+        });
+      }
+    }
+
     const product = await productModel.create({
       name,
       description,
