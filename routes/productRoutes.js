@@ -11,8 +11,11 @@ import {
   updateProductImageController,
 } from "../controllers/productController.js";
 import { isAdmin, isAuth } from "../middlewares/authMiddleware.js";
-import { singleUpload, uploadProductImages } from "../middlewares/multer.js";
-import { multipleUpload } from "../middlewares/multer.js";
+import {
+  singleUpload,
+  upload,
+  uploadProductImages,
+} from "../middlewares/multer.js";
 
 const router = express.Router();
 
@@ -29,13 +32,7 @@ router.get("/top", getTopProductsController);
 router.get("/:id", getSingleProductController);
 
 //CREATE PRODUCT
-router.post(
-  "/create",
-  isAuth,
-  isAdmin,
-  uploadProductImages,
-  createProductController
-);
+router.post("/create", isAuth, isAdmin, upload, createProductController);
 
 //UPDATE PRODUCT
 router.put("/:id", isAuth, isAdmin, updateProductController);
