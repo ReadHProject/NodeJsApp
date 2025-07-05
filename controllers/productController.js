@@ -272,6 +272,7 @@ export const updateProductController = async (req, res) => {
 //UPDATE PRODUCT IMAGE
 export const updateProductImageController = async (req, res) => {
   try {
+    const { colors } = req.body;
     //FIND PRODUCT
     const product = await productModel.findById(req.params.id);
 
