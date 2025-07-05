@@ -191,7 +191,7 @@ export const createProductController = async (req, res) => {
       price,
       stock,
       category,
-      images: generalImage ? [generalImage] : [],
+      images: generalImage ? generalImage : [],
       colors: colorImages,
     });
 
