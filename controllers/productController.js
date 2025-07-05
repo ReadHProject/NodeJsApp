@@ -293,8 +293,10 @@ export const updateProductImageController = async (req, res) => {
     }
 
     const parsedColors = colors ? JSON.parse(colors) : [];
+    console.log("colors :", colors);
 
     const uploadedFiles = req.files || [];
+    console.log("uploadedFiles :", uploadedFiles);
 
     // Update General Image if uploaded
     const generalFile = uploadedFiles.find(
