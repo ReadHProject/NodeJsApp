@@ -155,6 +155,7 @@ export const createProductController = async (req, res) => {
 
     const parsedColors = JSON.parse(colors || "[]");
 
+    const uploadedFiles = req.files; // array of { fieldname, filename, ... }
     const colorImages = parsedColors.map((color) => {
       const matchedFiles = uploadedFiles.filter(
         (f) => f.fieldname === color.colorId
