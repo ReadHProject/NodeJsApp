@@ -8,6 +8,7 @@ import cookieParser from "cookie-parser";
 import cloudinary from "cloudinary";
 import Stripe from "stripe";
 import helmet from "helmet";
+import path from "path";
 import mongoSanitize from "express-mongo-sanitize";
 
 import connectDB from "./config/db.js";
