@@ -285,7 +285,7 @@ export const updateProductImageController = async (req, res) => {
     }
 
     //CHECK FILE
-    if (!req.file) {
+    if (!req.files || req.files.length === 0) {
       return res.status(500).send({
         success: false,
         message: "Please provide product images",
