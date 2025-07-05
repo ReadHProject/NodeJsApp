@@ -72,6 +72,8 @@ app.use(
   })
 );
 
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 //Route
 //Routes Imports
 import testRoutes from "./routes/testRoutes.js";

@@ -167,6 +167,7 @@ export const createProductController = async (req, res) => {
         images: uploadedImages.map(
           (file) => `/uploads/products/${file.filename}`
         ),
+        sizes: color.sizes || [], // Sizes per color (new addition)
       };
     });
 
@@ -178,6 +179,8 @@ export const createProductController = async (req, res) => {
           },
         ]
       : null;
+
+    console.log("Uploaded Files:", req.files); // ✅ Check in Render logs
 
     const product = await productModel.create({
       name,

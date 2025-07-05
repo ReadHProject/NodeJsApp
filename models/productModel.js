@@ -40,16 +40,23 @@ const ColorSchema = new mongoose.Schema({
     required: true,
     description: 'Hex code or other representation (e.g., "#FFFFFF")',
   },
+  sizes: [
+    {
+      type: String,
+      required: true,
+      validate: {
+        validator: (arr) => arr.length > 0,
+        message: "At least one size must be selected per color.",
+      },
+    },
+  ],
   images: {
     type: [String],
     required: true,
-    // validate: {
-    //   validator: function (arr) {
-    //     // Ensure Greater than 5 images per color
-    //     return arr.length > 5;
-    //   },
-    //   message: "Each color must have not more than 5 images.",
-    // },
+    validate: {
+      validator: (arr) => arr.length >= 5,
+      message: (props) => `Color ${props.value} must have at least 5 images.`,
+    },
   },
 });
 
