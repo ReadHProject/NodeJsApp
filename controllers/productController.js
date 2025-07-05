@@ -174,14 +174,27 @@ export const createProductController = async (req, res) => {
       };
     });
 
-    const generalImage = req.files["generalImage"]
+    const generalFile = uploadedFiles.find(
+      (f) => f.fieldname === "generalImage"
+    );
+    const generalImage = generalFile
       ? [
           {
-            public_id: req.files["generalImage"][0].filename,
-            url: `/uploads/products/${req.files["generalImage"][0].filename}`,
+            public_id: generalFile.filename,
+            url: `/uploads/products/${generalFile.filename}`,
           },
         ]
-      : null;
+      : [];
+
+    console.log("💾 Product Data to Save:", {
+      name,
+      description,
+      price,
+      stock,
+      category,
+      images: generalImage,
+      colors: colorImages,
+    });
 
     console.log("Uploaded Files:", req.files); // ✅ Check in Render logs
 
