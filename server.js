@@ -9,6 +9,7 @@ import cloudinary from "cloudinary";
 import Stripe from "stripe";
 import helmet from "helmet";
 import path from "path";
+import { fileURLToPath } from "url";
 import mongoSanitize from "express-mongo-sanitize";
 
 import connectDB from "./config/db.js";
@@ -73,6 +74,8 @@ app.use(
   })
 );
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 //Route
