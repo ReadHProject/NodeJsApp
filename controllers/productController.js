@@ -156,17 +156,19 @@ export const createProductController = async (req, res) => {
     const parsedColors = JSON.parse(colors || "[]");
 
     const colorImages = parsedColors.map((color) => {
-      const uploadedImages = req.files[color.colorId] || [];
-      if (uploadedImages.length < 5) {
+      const matchedFiles = uploadedFiles.filter(
+        (f) => f.fieldname === color.colorId
+      );
+
+      if (matchedFiles.length < 5) {
         throw new Error(
-          `Color ${color.colorName} must have at least 5 images (found ${uploadedImages.length})`
+          `Color ${color.colorName} must have at least 5 images (found ${matchedFiles.length})`
         );
       }
+
       return {
         ...color,
-        images: uploadedImages.map(
-          (file) => `/uploads/products/${file.filename}`
-        ),
+        images: matchedFiles.map((f) => `/uploads/products/${f.filename}`),
         sizes: color.sizes || [], // Sizes per color (new addition)
       };
     });
