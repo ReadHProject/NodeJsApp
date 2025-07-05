@@ -284,6 +284,8 @@ export const updateProductImageController = async (req, res) => {
       });
     }
 
+    console.log("req.files :", req.files);
+
     //CHECK FILE
     if (!req.files || req.files.length === 0) {
       return res.status(500).send({
