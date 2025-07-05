@@ -307,6 +307,7 @@ export const updateProductImageController = async (req, res) => {
         },
       ];
     }
+    console.log("generalFile :", generalFile);
 
     // Handle Color Images replacement
     const updatedColors = product.colors.map((existingColor) => {
@@ -342,6 +343,8 @@ export const updateProductImageController = async (req, res) => {
         return existingColor;
       }
     });
+
+    console.log("updatedColors :", updatedColors);
 
     product.colors = updatedColors;
     await product.save();
