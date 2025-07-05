@@ -36,7 +36,7 @@ export const upload = multer({ storage });
 export const singleUpload = multer({ storage }).single("file"); // if key value pair is same like storage:storage then we can write it only one time
 
 //multipleUpload
-export const multipleUpload = multer({ storage }).array("files", 50); // allow up to 10 files, // Increase limit if needed
+export const multipleUpload = multer({ storage }).any(); // allow up to 10 files, // Increase limit if needed
 
 // | Code Part                | Meaning                                            |
 // | ------------------------ | -------------------------------------------------- |
