@@ -291,19 +291,59 @@ export const updateProductImageController = async (req, res) => {
       });
     }
 
-    const file = getDataUri(req.file);
+    const parsedColors = colors ? JSON.parse(colors) : [];
 
-    //UPLOAD FILE TO CLOUDINARY
-    const cdb = await cloudinary.v2.uploader.upload(file.content);
+    const uploadedFiles = req.files || [];
 
-    //UPDATE PRDUCT
-    const image = {
-      public_id: cdb.public_id,
-      url: cdb.secure_url,
-    };
+    // Update General Image if uploaded
+    const generalFile = uploadedFiles.find(
+      (f) => f.fieldname === "generalImage"
+    );
+    if (generalFile) {
+      product.images = [
+        {
+          public_id: generalFile.filename,
+          url: `/uploads/products/${generalFile.filename}`,
+        },
+      ];
+    }
 
-    //SAVE PRODUCT
-    product.images.push(image);
+    // Handle Color Images replacement
+    const updatedColors = product.colors.map((existingColor) => {
+      const incomingColor = parsedColors.find(
+        (c) => c.colorId === existingColor.colorId
+      );
+
+      if (incomingColor) {
+        const matchedFiles = uploadedFiles.filter(
+          (f) => f.fieldname === existingColor.colorId
+        );
+
+        if (matchedFiles.length > 0) {
+          // Replace only the images provided, keep other images intact
+          const updatedImages = [...existingColor.images];
+
+          matchedFiles.forEach((file) => {
+            const fileIndex = parseInt(file.originalname.split("_")[1]); // Extract index (e.g., red_2.jpg -> index 2)
+            if (!isNaN(fileIndex)) {
+              updatedImages[fileIndex] = `/uploads/products/${file.filename}`;
+            }
+          });
+
+          return {
+            ...existingColor,
+            images: updatedImages,
+            sizes: incomingColor.sizes || existingColor.sizes || [],
+          };
+        } else {
+          return existingColor;
+        }
+      } else {
+        return existingColor;
+      }
+    });
+
+    product.colors = updatedColors;
     await product.save();
 
     return res.status(200).send({

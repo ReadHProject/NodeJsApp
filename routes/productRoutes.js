@@ -40,7 +40,13 @@ router.post(
 router.put("/:id", isAuth, isAdmin, updateProductController);
 
 //UPDATE PRODUCT IMAGE
-router.put("/image/:id", isAuth, isAdmin, multipleUpload);
+router.put(
+  "/image/:id",
+  isAuth,
+  isAdmin,
+  multipleUpload,
+  updateProductImageController
+);
 
 //DELETE PRODUCT IMAGE
 router.delete(
