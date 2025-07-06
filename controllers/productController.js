@@ -314,42 +314,34 @@ export const updateProductImageController = async (req, res) => {
     }
     console.log("generalFile :", generalFile);
 
-    // Handle Color Images replacement
+    // ✅ Update Color Images precisely
     const updatedColors = product.colors.map((existingColor) => {
       const incomingColor = parsedColors.find(
         (c) => c.colorId === existingColor.colorId
       );
+      const matchedFiles = uploadedFiles.filter(
+        (f) => f.fieldname === existingColor.colorId
+      );
 
-      if (incomingColor) {
-        const matchedFiles = uploadedFiles.filter(
-          (f) => f.fieldname === existingColor.colorId
-        );
+      if (incomingColor && matchedFiles.length > 0) {
+        const updatedImages = [...existingColor.images];
 
-        if (matchedFiles.length > 0) {
-          // Replace only the images provided, keep other images intact
-          const updatedImages = [...existingColor.images];
+        matchedFiles.forEach((file) => {
+          const fileIndex = parseInt(file.originalname.split("_")[1]);
+          if (!isNaN(fileIndex) && fileIndex < updatedImages.length) {
+            updatedImages[fileIndex] = `/uploads/products/${file.filename}`;
+          }
+        });
 
-          matchedFiles.forEach((file) => {
-            const fileIndex = parseInt(file.originalname.split("_")[1]); // Extract index (e.g., red_2.jpg -> index 2)
-            if (!isNaN(fileIndex)) {
-              updatedImages[fileIndex] = `/uploads/products/${file.filename}`;
-            }
-          });
-
-          return {
-            ...existingColor,
-            images: updatedImages,
-            sizes: incomingColor.sizes || existingColor.sizes || [],
-          };
-        } else {
-          return existingColor;
-        }
-      } else {
-        return existingColor;
+        return {
+          ...existingColor,
+          images: updatedImages,
+          sizes: incomingColor.sizes || existingColor.sizes,
+        };
       }
-    });
 
-    console.log("updatedColors :", updatedColors);
+      return existingColor;
+    });
 
     product.colors = updatedColors;
     await product.save();
