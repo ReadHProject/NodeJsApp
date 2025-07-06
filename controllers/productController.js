@@ -284,15 +284,15 @@ export const updateProductImageController = async (req, res) => {
       });
     }
 
-    console.log("req.files :", req.files);
+    // console.log("req.files :", req.files);
 
-    //CHECK FILE
-    if (!req.files || req.files.length === 0) {
-      return res.status(500).send({
-        success: false,
-        message: "Please provide product images",
-      });
-    }
+    // //CHECK FILE
+    // if (!req.files || req.files.length === 0) {
+    //   return res.status(500).send({
+    //     success: false,
+    //     message: "Please provide product images",
+    //   });
+    // }
 
     let parsedColors = [];
     try {
@@ -334,13 +334,14 @@ export const updateProductImageController = async (req, res) => {
       const incomingColor = parsedColors.find(
         (c) => c.colorId === existingColor.colorId
       );
-      const matchedFiles = uploadedFiles.filter(
+
+      const matchedFiles = (req.files || []).filter(
         (f) => f.fieldname === existingColor.colorId
       );
 
       let updatedImages = [...existingColor.images];
 
-      // If there are image uploads, replace specific images
+      // ✅ Update images only if files exist
       if (matchedFiles.length > 0) {
         matchedFiles.forEach((file) => {
           const fileIndex = parseInt(file.originalname.split("_")[1]);
@@ -350,13 +351,14 @@ export const updateProductImageController = async (req, res) => {
         });
       }
 
+      // ✅ Always update sizes if provided
       return {
         ...existingColor,
         images: updatedImages,
         sizes:
           incomingColor?.sizes?.length > 0
             ? incomingColor.sizes
-            : existingColor.sizes, // ✅ Always update sizes if provided
+            : existingColor.sizes,
       };
     });
 
