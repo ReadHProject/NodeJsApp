@@ -54,8 +54,8 @@ const ColorSchema = new mongoose.Schema({
     type: [String],
     required: true,
     validate: {
-      validator: (arr) => arr.length >= 5,
-      message: (props) => `Color ${props.value} must have at least 5 images.`,
+      validator: (arr) => arr.length >= 1,
+      message: (props) => `Color ${props.value} must have at least 1 images.`,
     },
   },
 });
