@@ -161,7 +161,7 @@ export const createProductController = async (req, res) => {
         (f) => f.fieldname === color.colorId
       );
 
-      if (matchedFiles.length < 5) {
+      if (matchedFiles.length < 1) {
         throw new Error(
           `Color ${color.colorName} must have at least 5 images (found ${matchedFiles.length})`
         );
