@@ -294,8 +294,24 @@ export const updateProductImageController = async (req, res) => {
       });
     }
 
-    const parsedColors = colors ? JSON.parse(colors) : [];
-    console.log("colors :", colors);
+    let parsedColors = [];
+    try {
+      if (typeof req.body.colors === "string") {
+        parsedColors = JSON.parse(req.body.colors);
+      } else if (typeof req.body.colors === "object") {
+        parsedColors = req.body.colors; // already parsed
+      } else {
+        parsedColors = [];
+      }
+    } catch (err) {
+      console.error("❌ Invalid colors JSON:", req.body.colors);
+      return res
+        .status(400)
+        .send({ success: false, message: "Invalid colors JSON" });
+    }
+
+    console.log("✅ Parsed Colors:", parsedColors);
+    console.log("✅ Uploaded Files:", req.files);
 
     const uploadedFiles = req.files || [];
     console.log("uploadedFiles :", uploadedFiles);
