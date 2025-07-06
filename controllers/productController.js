@@ -330,7 +330,6 @@ export const updateProductImageController = async (req, res) => {
     }
     console.log("generalFile :", generalFile);
 
-    // ✅ Update Color Images precisely
     const updatedColors = product.colors.map((existingColor) => {
       const incomingColor = parsedColors.find(
         (c) => c.colorId === existingColor.colorId
@@ -339,24 +338,26 @@ export const updateProductImageController = async (req, res) => {
         (f) => f.fieldname === existingColor.colorId
       );
 
-      if (incomingColor && matchedFiles.length > 0) {
-        const updatedImages = [...existingColor.images];
+      let updatedImages = [...existingColor.images];
 
+      // If there are image uploads, replace specific images
+      if (matchedFiles.length > 0) {
         matchedFiles.forEach((file) => {
           const fileIndex = parseInt(file.originalname.split("_")[1]);
           if (!isNaN(fileIndex) && fileIndex < updatedImages.length) {
             updatedImages[fileIndex] = `/uploads/products/${file.filename}`;
           }
         });
-
-        return {
-          ...existingColor,
-          images: updatedImages,
-          sizes: incomingColor.sizes || existingColor.sizes,
-        };
       }
 
-      return existingColor;
+      return {
+        ...existingColor,
+        images: updatedImages,
+        sizes:
+          incomingColor?.sizes?.length > 0
+            ? incomingColor.sizes
+            : existingColor.sizes, // ✅ Always update sizes if provided
+      };
     });
 
     product.colors = updatedColors;
