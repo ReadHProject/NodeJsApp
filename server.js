@@ -34,10 +34,10 @@ cloudinary.v2.config({
 const app = express();
 
 // ⬇ Add this to disable caching
-app.use((req, res, next) => {
-  res.set("Cache-Control", "no-store");
-  next();
-});
+// app.use((req, res, next) => {
+//   res.set("Cache-Control", "no-store");
+//   next();
+// });
 
 //Middlewares
 app.use(helmet()); // security middleware
