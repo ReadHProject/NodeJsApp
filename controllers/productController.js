@@ -341,12 +341,19 @@ export const updateProductImageController = async (req, res) => {
 
       let updatedImages = [...existingColor.images];
 
-      // ✅ Update images only if files exist
+      // ✅ Append any new images
       if (matchedFiles.length > 0) {
         matchedFiles.forEach((file) => {
           const fileIndex = parseInt(file.originalname.split("_")[1]);
+
+          const newImagePath = `/uploads/products/${file.filename}`;
+
           if (!isNaN(fileIndex) && fileIndex < updatedImages.length) {
-            updatedImages[fileIndex] = `/uploads/products/${file.filename}`;
+            // Replace existing image
+            updatedImages[fileIndex] = newImagePath;
+          } else {
+            // ✅ Add new image (this line fixes your problem!)
+            updatedImages.push(newImagePath);
           }
         });
       }
