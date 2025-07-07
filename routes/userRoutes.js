@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  getAllUsersController,
   getUserProfileController,
   loginController,
   logoutController,
@@ -36,6 +37,9 @@ router.post("/login", limiter, loginController);
 
 //PROFILE
 router.get("/profile", isAuth, getUserProfileController);
+
+// GET ALL USERS - ADMIN
+router.get("/all-users", isAuth, isAdmin, getAllUsersController);
 
 //LOGOUT
 router.get("/logout", isAuth, logoutController);

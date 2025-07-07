@@ -172,6 +172,27 @@ export const getUserProfileController = async (req, res) => {
   }
 };
 
+// GET ALL USERS - ADMIN
+export const getAllUsersController = async (req, res) => {
+  try {
+    const users = await userModel.find().select("-password"); // Exclude passwords
+
+    return res.status(200).send({
+      success: true,
+      message: "All Users Fetched Successfully",
+      totalUsers: users.length,
+      users,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({
+      success: false,
+      message: "Error in GET ALL USERS API",
+      error,
+    });
+  }
+};
+
 //LOGOUT
 export const logoutController = async (req, res) => {
   try {
