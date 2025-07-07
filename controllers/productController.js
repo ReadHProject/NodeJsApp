@@ -165,24 +165,22 @@ export const createProductController = async (req, res) => {
     const uploadedFiles = req.files || [];
 
     const colorImages = parsedColors.map((color) => {
+      // Only take the freshly uploaded images for this color
       const matchedFiles = uploadedFiles.filter(
         (f) => f.fieldname === color.colorId
       );
 
-      const images = matchedFiles.map((f) => `/uploads/products/${f.filename}`);
-
-      // Combine any images passed from frontend (in case of updates) with uploaded ones
-      const finalImages = Array.isArray(color.images)
-        ? [...color.images, ...images]
-        : images;
-
-      if (finalImages.length < 1) {
-        throw new Error(`Color ${color.colorName} must have at least 1 image`);
+      if (matchedFiles.length < 1) {
+        throw new Error(
+          `Color ${color.colorName} must have at least 1 uploaded image`
+        );
       }
+
+      const images = matchedFiles.map((f) => `/uploads/products/${f.filename}`);
 
       return {
         ...color,
-        images: finalImages,
+        images, // ✅ Only the correct server paths, no mixing with frontend images
         sizes: color.sizes || [],
       };
     });
