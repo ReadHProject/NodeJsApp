@@ -464,60 +464,46 @@ export const deleteProductImageController = async (req, res) => {
         .send({ success: false, message: "Product Not Found" });
     }
 
-    const { imageId, color } = req.query;
+    const { imageUrl, color } = req.query;
 
-    if (!imageId) {
+    if (!imageUrl) {
       return res
         .status(400)
-        .send({ success: false, message: "Image ID is required" });
+        .send({ success: false, message: "Image URL is required" });
     }
 
     if (color) {
-      // Delete from color images
-      const colorIndex = product.colors.findIndex((c) => c.color === color);
+      // Color-specific image deletion
+      const colorIndex = product.colors.findIndex((c) => c.colorName === color);
       if (colorIndex < 0) {
         return res
           .status(404)
           .send({ success: false, message: "Color not found" });
       }
 
-      const imgIndex = product.colors[colorIndex].images.findIndex(
-        (img) => img._id.toString() === imageId
+      const imageIndex = product.colors[colorIndex].images.findIndex(
+        (img) => img === imageUrl
       );
-      if (imgIndex < 0) {
+      if (imageIndex < 0) {
         return res
           .status(404)
           .send({ success: false, message: "Color image not found" });
       }
 
-      const imageToDelete = product.colors[colorIndex].images[imgIndex];
-      const filePath = path.join(
-        process.cwd(),
-        "uploads",
-        "products",
-        imageToDelete.filename
-      );
+      const filePath = path.join(process.cwd(), imageUrl);
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 
-      product.colors[colorIndex].images.splice(imgIndex, 1);
+      product.colors[colorIndex].images.splice(imageIndex, 1);
     } else {
-      // Delete from general images
-      const imgIndex = product.images.findIndex(
-        (img) => img._id.toString() === imageId
-      );
+      // General image deletion
+      const imgIndex = product.images.findIndex((img) => img.url === imageUrl);
       if (imgIndex < 0) {
         return res
           .status(404)
           .send({ success: false, message: "Product image not found" });
       }
 
-      const imageToDelete = product.images[imgIndex];
-      const filePath = path.join(
-        process.cwd(),
-        "uploads",
-        "products",
-        imageToDelete.filename
-      );
+      const filePath = path.join(process.cwd(), product.images[imgIndex].url);
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 
       product.images.splice(imgIndex, 1);
@@ -525,9 +511,9 @@ export const deleteProductImageController = async (req, res) => {
 
     await product.save();
 
-    res
+    return res
       .status(200)
-      .send({ success: true, message: "Image deleted successfully" });
+      .send({ success: true, message: "Image deleted successfully", product });
   } catch (error) {
     console.log(error);
     res.status(500).send({ success: false, message: "Server Error", error });
