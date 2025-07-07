@@ -153,30 +153,44 @@ export const createProductController = async (req, res) => {
   try {
     const { name, description, price, stock, category, colors } = req.body;
 
+    if (!name || !description || !price || !stock || !category || !colors) {
+      return res.status(400).send({
+        success: false,
+        message: "All fields are required",
+      });
+    }
+
     const parsedColors = JSON.parse(colors || "[]");
 
-    const uploadedFiles = req.files; // array of { fieldname, filename, ... }
+    const uploadedFiles = req.files || [];
+
     const colorImages = parsedColors.map((color) => {
       const matchedFiles = uploadedFiles.filter(
         (f) => f.fieldname === color.colorId
       );
 
-      if (matchedFiles.length < 1) {
-        throw new Error(
-          `Color ${color.colorName} must have at least 5 images (found ${matchedFiles.length})`
-        );
+      const images = matchedFiles.map((f) => `/uploads/products/${f.filename}`);
+
+      // Combine any images passed from frontend (in case of updates) with uploaded ones
+      const finalImages = Array.isArray(color.images)
+        ? [...color.images, ...images]
+        : images;
+
+      if (finalImages.length < 1) {
+        throw new Error(`Color ${color.colorName} must have at least 1 image`);
       }
 
       return {
         ...color,
-        images: matchedFiles.map((f) => `/uploads/products/${f.filename}`),
-        sizes: color.sizes || [], // Sizes per color (new addition)
+        images: finalImages,
+        sizes: color.sizes || [],
       };
     });
 
     const generalFile = uploadedFiles.find(
       (f) => f.fieldname === "generalImage"
     );
+
     const generalImage = generalFile
       ? [
           {
@@ -186,25 +200,13 @@ export const createProductController = async (req, res) => {
         ]
       : [];
 
-    console.log("💾 Product Data to Save:", {
-      name,
-      description,
-      price,
-      stock,
-      category,
-      images: generalImage,
-      colors: colorImages,
-    });
-
-    console.log("Uploaded Files:", req.files); // ✅ Check in Render logs
-
     const product = await productModel.create({
       name,
       description,
       price,
       stock,
       category,
-      images: generalImage ? generalImage : [],
+      images: generalImage,
       colors: colorImages,
     });
 
@@ -217,7 +219,7 @@ export const createProductController = async (req, res) => {
     console.log(err);
     res.status(500).send({
       success: false,
-      message: err.message,
+      message: err.message || "Something went wrong",
     });
   }
 };
