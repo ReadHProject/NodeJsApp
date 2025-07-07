@@ -33,17 +33,17 @@ router.post("/payments", isAuth, paymentsController);
 router.get("/admin/get-all-orders", isAuth, isAdmin, getAllOrdersController);
 
 // 1️⃣ Auto Next Status (Button)
-router.put("/admin/order/:id", isAuth, isAdmin, changeOrderStatusController);
+router.put("/admin/:id", isAuth, isAdmin, changeOrderStatusController);
 
 // 2️⃣ Manual Status Update (Modal)
 router.put(
-  "/admin/order/update-status/:id",
+  "/admin/update-status/:id",
   isAuth,
   isAdmin,
   updateOrderStatusController
 );
 
 // 3️⃣ Delete Order
-router.delete("/admin/order/:id", isAuth, isAdmin, deleteOrderController);
+router.delete("/admin/:id", isAuth, isAdmin, deleteOrderController);
 
 export default router;
