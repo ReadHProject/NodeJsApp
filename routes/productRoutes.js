@@ -73,7 +73,7 @@ router.delete(
 );
 
 //DELETE PRODUCT
-router.delete("/delete/:id", isAuth, isAdmin, deleteProductController);
+router.delete("/delete-product/:id", isAuth, isAdmin, deleteProductController);
 
 //REVIEW PRODUCT
 router.put("/:id/review", isAuth, productReviewController);

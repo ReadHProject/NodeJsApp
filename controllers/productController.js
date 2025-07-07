@@ -586,12 +586,51 @@ export const deleteAllProductImagesController = async (req, res) => {
 };
 
 //DELETE PRODUCT
+// export const deleteProductController = async (req, res) => {
+//   try {
+//     //FIND PRODUCT
+//     const product = await productModel.findById(req.params.id);
+
+//     //VALIDATION
+//     if (!product) {
+//       return res.status(404).send({
+//         success: false,
+//         message: "Product Not Found",
+//       });
+//     }
+
+//     //FIND AND DELETE IMAGE FROM CLOUDINARY
+//     for (let index = 0; index < product.images.length; index++) {
+//       await cloudinary.v2.uploader.destroy(product.images[index].public_id);
+//     }
+
+//     //DELETE PRODUCT
+//     await product.deleteOne();
+//     return res.status(200).send({
+//       success: true,
+//       message: "Product Deleted Successfully",
+//       product,
+//     });
+//   } catch (error) {
+//     console.log(error);
+//     //Cast Error || Object Id
+//     if (error.name === "CastError") {
+//       return res.status(500).send({
+//         success: false,
+//         message: `Invalid Id`,
+//       });
+//     }
+//     return res.status(500).send({
+//       success: false,
+//       message: `Error in Delete Product Image API: ${console.log(error)}`,
+//       error,
+//     });
+//   }
+// };
+
 export const deleteProductController = async (req, res) => {
   try {
-    //FIND PRODUCT
     const product = await productModel.findById(req.params.id);
-
-    //VALIDATION
     if (!product) {
       return res.status(404).send({
         success: false,
@@ -599,30 +638,54 @@ export const deleteProductController = async (req, res) => {
       });
     }
 
-    //FIND AND DELETE IMAGE FROM CLOUDINARY
-    for (let index = 0; index < product.images.length; index++) {
-      await cloudinary.v2.uploader.destroy(product.images[index].public_id);
-    }
+    // Delete general images from server
+    product.images.forEach((img) => {
+      if (img?.url) {
+        const filename = img.url.split("/").pop();
+        const filePath = path.join(
+          process.cwd(),
+          "uploads",
+          "products",
+          filename
+        );
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      }
+    });
 
-    //DELETE PRODUCT
+    // Delete color images from server
+    product.colors.forEach((color) => {
+      color.images.forEach((img) => {
+        if (img) {
+          const filename = img.split("/").pop();
+          const filePath = path.join(
+            process.cwd(),
+            "uploads",
+            "products",
+            filename
+          );
+          if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        }
+      });
+    });
+
+    // Delete product from DB
     await product.deleteOne();
+
     return res.status(200).send({
       success: true,
-      message: "Product Deleted Successfully",
-      product,
+      message: "Product deleted successfully",
     });
   } catch (error) {
     console.log(error);
-    //Cast Error || Object Id
     if (error.name === "CastError") {
-      return res.status(500).send({
+      return res.status(400).send({
         success: false,
-        message: `Invalid Id`,
+        message: "Invalid Product ID",
       });
     }
     return res.status(500).send({
       success: false,
-      message: `Error in Delete Product Image API: ${console.log(error)}`,
+      message: "Server Error",
       error,
     });
   }
