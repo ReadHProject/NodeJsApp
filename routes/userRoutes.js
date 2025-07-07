@@ -12,7 +12,7 @@ import {
   updateProfilePicController,
   verifyOtpController,
 } from "../controllers/userController.js";
-import { isAuth } from "../middlewares/authMiddleware.js";
+import { isAdmin, isAuth } from "../middlewares/authMiddleware.js";
 import { profileUpload, singleUpload } from "../middlewares/multer.js";
 import { rateLimit } from "express-rate-limit";
 
