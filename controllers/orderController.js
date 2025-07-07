@@ -238,8 +238,6 @@ export const getAllOrdersController = async (req, res) => {
 //   }
 // };
 
-import orderModel from "../models/orderModel.js";
-
 // 1️⃣ Update Order Status (Manual)
 export const updateOrderStatusController = async (req, res) => {
   try {
