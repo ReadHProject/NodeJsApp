@@ -3,10 +3,12 @@ import { isAdmin, isAuth } from "../middlewares/authMiddleware.js";
 import {
   changeOrderStatusController,
   createOrderController,
+  deleteOrderController,
   getAllOrdersController,
   getMyOrdersController,
   paymentsController,
   singleOrderDetailsController,
+  updateOrderStatusController,
 } from "../controllers/orderController.js";
 
 const router = express.Router();
@@ -30,7 +32,18 @@ router.post("/payments", isAuth, paymentsController);
 //GET ALL ORDERS
 router.get("/admin/get-all-orders", isAuth, isAdmin, getAllOrdersController);
 
-//CHANGE ORDER STATUS
+// 1️⃣ Auto Next Status (Button)
 router.put("/admin/order/:id", isAuth, isAdmin, changeOrderStatusController);
+
+// 2️⃣ Manual Status Update (Modal)
+router.put(
+  "/admin/order/update-status/:id",
+  isAuth,
+  isAdmin,
+  updateOrderStatusController
+);
+
+// 3️⃣ Delete Order
+router.delete("/admin/order/:id", isAuth, isAdmin, deleteOrderController);
 
 export default router;
