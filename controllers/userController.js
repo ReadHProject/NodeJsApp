@@ -260,23 +260,80 @@ export const updatePasswordController = async (req, res) => {
 };
 
 //UPDATE USER PROFILE PHOTO
+// export const updateProfilePicController = async (req, res) => {
+//   try {
+//     const user = await userModel.findById(req.user._id);
+
+//     //GET FILE FROM CLIENT(USER) PHOTO
+//     const file = getDataUri(req.file);
+
+//     if (user.profilePic?.public_id) {
+//       //DELETE PREVIOUS PROFILE IMAGE
+//       await cloudinary.v2.uploader.destroy(user.profilePic.public_id);
+//     }
+
+//     //UPDATE PROFILE IMAGE
+//     const cdb = await cloudinary.v2.uploader.upload(file.content);
+//     user.profilePic = {
+//       public_id: cdb.public_id,
+//       url: cdb.secure_url,
+//     };
+
+//     //Save Function
+//     await user.save();
+//     return res.status(200).send({
+//       success: true,
+//       message: "User Profile Pic Updated Successfully",
+//     });
+//   } catch (error) {
+//     console.log(error);
+//     return res.status(500).send({
+//       success: false,
+//       message: `Error in Get Update Profile Pic API: ${console.log(error)}`,
+//       error,
+//     });
+//   }
+// };
+
 export const updateProfilePicController = async (req, res) => {
   try {
     const user = await userModel.findById(req.user._id);
 
-    //GET FILE FROM CLIENT(USER) PHOTO
-    const file = getDataUri(req.file);
-
-    if (user.profilePic?.public_id) {
-      //DELETE PREVIOUS PROFILE IMAGE
-      await cloudinary.v2.uploader.destroy(user.profilePic.public_id);
+    if (!user) {
+      return res.status(404).send({
+        success: false,
+        message: "User not found",
+      });
     }
 
-    //UPDATE PROFILE IMAGE
-    const cdb = await cloudinary.v2.uploader.upload(file.content);
+    if (!req.file) {
+      return res.status(400).send({
+        success: false,
+        message: "No image uploaded",
+      });
+    }
+
+    const newFileName = req.file.filename;
+    const newImagePath = `/uploads/profile/${newFileName}`;
+    const oldFileName = user.profilePic?.public_id;
+
+    // ✅ Delete old image from /uploads/profile if it exists
+    if (oldFileName) {
+      const oldFilePath = path.join(
+        process.cwd(),
+        "uploads",
+        "profile",
+        oldFileName
+      );
+      if (fs.existsSync(oldFilePath)) {
+        fs.unlinkSync(oldFilePath);
+      }
+    }
+
+    // ✅ Update or Insert new image
     user.profilePic = {
-      public_id: cdb.public_id,
-      url: cdb.secure_url,
+      public_id: newFileName,
+      url: newImagePath,
     };
 
     //Save Function

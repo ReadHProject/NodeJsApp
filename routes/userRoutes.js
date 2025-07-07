@@ -12,7 +12,7 @@ import {
   verifyOtpController,
 } from "../controllers/userController.js";
 import { isAuth } from "../middlewares/authMiddleware.js";
-import { singleUpload } from "../middlewares/multer.js";
+import { profileUpload, singleUpload } from "../middlewares/multer.js";
 import { rateLimit } from "express-rate-limit";
 
 //RATE LIMITER
@@ -47,7 +47,12 @@ router.put("/profile-update", isAuth, updateProfileController);
 router.put("/update-password", isAuth, updatePasswordController);
 
 //UPDATE PROFILE PIC
-router.put("/update-picture", isAuth, singleUpload, updateProfilePicController);
+router.put(
+  "/update-picture",
+  isAuth,
+  profileUpload,
+  updateProfilePicController
+);
 
 //FORGOT PASSWORD
 router.post("/reset-password", isAuth, passwordResetController);

@@ -31,6 +31,26 @@ const storage = multer.diskStorage({
   },
 });
 
+// Ensure profile upload directory exists
+const profileDir = path.join(process.cwd(), "uploads", "profile");
+if (!fs.existsSync(profileDir)) {
+  fs.mkdirSync(profileDir, { recursive: true });
+}
+
+// Multer storage for profile pics
+const profileStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, profileDir);
+  },
+  filename: function (req, file, cb) {
+    const ext = path.extname(file.originalname);
+    const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+    cb(null, uniqueName);
+  },
+});
+
+export const profileUpload = multer({ storage: profileStorage }).single("file");
+
 export const upload = multer({ storage });
 
 export const singleUpload = multer({ storage }).single("file"); // if key value pair is same like storage:storage then we can write it only one time
