@@ -741,6 +741,7 @@ export const productReviewController = async (req, res) => {
     return res.status(200).send({
       success: true,
       message: "Product Reviewed Successfully",
+      product,
     });
   } catch (error) {
     console.log(error);
