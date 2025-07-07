@@ -530,38 +530,47 @@ export const deleteAllProductImagesController = async (req, res) => {
         .send({ success: false, message: "Product not found" });
     }
 
-    // Delete general images
-    product.images.forEach((img) => {
-      if (img?.url) {
-        const filename = img.url.split("/").pop(); // ✅ extract filename
-        const filePath = path.join(
-          process.cwd(),
-          "uploads",
-          "products",
-          filename
-        );
-        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-      }
-    });
-    product.images = [];
-
-    // Delete color images
-    product.colors.forEach((color) => {
-      const updatedImages = [];
-      color.images.forEach((img) => {
-        if (img) {
-          const filename = img.split("/").pop(); // ✅ extract filename
-          const filePath = path.join(
-            process.cwd(),
-            "uploads",
-            "products",
-            filename
-          );
-          if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    // ✅ Delete general images safely
+    if (Array.isArray(product.images)) {
+      product.images.forEach((img) => {
+        if (img?.url) {
+          const filename = img.url.split("/").pop();
+          if (filename) {
+            const filePath = path.join(
+              process.cwd(),
+              "uploads",
+              "products",
+              filename
+            );
+            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+          }
         }
       });
-      color.images = []; // clear images for that color
-    });
+      product.images = [];
+    }
+
+    // ✅ Delete color images safely
+    if (Array.isArray(product.colors)) {
+      product.colors.forEach((color) => {
+        if (Array.isArray(color.images)) {
+          color.images.forEach((img) => {
+            if (img) {
+              const filename = img.split("/").pop();
+              if (filename) {
+                const filePath = path.join(
+                  process.cwd(),
+                  "uploads",
+                  "products",
+                  filename
+                );
+                if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+              }
+            }
+          });
+          color.images = [];
+        }
+      });
+    }
 
     await product.save();
 
@@ -571,7 +580,7 @@ export const deleteAllProductImagesController = async (req, res) => {
       product,
     });
   } catch (error) {
-    console.log(error);
+    console.log("❌ Error in deleteAllProductImagesController:", error);
     res.status(500).send({ success: false, message: "Server Error", error });
   }
 };
