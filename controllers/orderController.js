@@ -248,7 +248,7 @@ export const updateOrderStatusController = async (req, res) => {
     if (!order) {
       return res
         .status(404)
-        .send({ success: false, message: "Order not found" });
+        .json({ success: false, message: "Order not found" });
     }
 
     order.orderStatus = orderStatus;
@@ -258,14 +258,14 @@ export const updateOrderStatusController = async (req, res) => {
 
     await order.save();
 
-    res.status(200).send({
+    res.status(200).json({
       success: true,
       message: "Order status updated successfully",
       order,
     });
   } catch (error) {
     console.error(error);
-    res.status(500).send({
+    res.status(500).json({
       success: false,
       message: "Failed to update order status",
       error: error.message,
@@ -282,7 +282,7 @@ export const changeOrderStatusController = async (req, res) => {
     if (!order) {
       return res
         .status(404)
-        .send({ success: false, message: "Order not found" });
+        .json({ success: false, message: "Order not found" });
     }
 
     if (order.orderStatus === "processing") {
@@ -293,19 +293,19 @@ export const changeOrderStatusController = async (req, res) => {
     } else {
       return res
         .status(400)
-        .send({ success: false, message: "Order already delivered" });
+        .json({ success: false, message: "Order already delivered" });
     }
 
     await order.save();
 
-    res.status(200).send({
+    res.status(200).json({
       success: true,
       message: "Order status changed to next step",
       order,
     });
   } catch (error) {
     console.error(error);
-    res.status(500).send({
+    res.status(500).json({
       success: false,
       message: "Failed to change order status",
       error: error.message,
@@ -322,16 +322,16 @@ export const deleteOrderController = async (req, res) => {
     if (!order) {
       return res
         .status(404)
-        .send({ success: false, message: "Order not found" });
+        .json({ success: false, message: "Order not found" });
     }
 
-    res.status(200).send({
+    res.status(200).json({
       success: true,
       message: "Order deleted successfully",
     });
   } catch (error) {
     console.error(error);
-    res.status(500).send({
+    res.status(500).json({
       success: false,
       message: "Failed to delete order",
       error: error.message,
