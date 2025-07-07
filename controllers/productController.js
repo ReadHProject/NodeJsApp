@@ -532,28 +532,35 @@ export const deleteAllProductImagesController = async (req, res) => {
 
     // Delete general images
     product.images.forEach((img) => {
-      const filePath = path.join(
-        process.cwd(),
-        "uploads",
-        "products",
-        img.filename
-      );
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      if (img?.url) {
+        const filename = img.url.split("/").pop(); // ✅ extract filename
+        const filePath = path.join(
+          process.cwd(),
+          "uploads",
+          "products",
+          filename
+        );
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      }
     });
     product.images = [];
 
     // Delete color images
     product.colors.forEach((color) => {
+      const updatedImages = [];
       color.images.forEach((img) => {
-        const filePath = path.join(
-          process.cwd(),
-          "uploads",
-          "products",
-          img.filename
-        );
-        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        if (img) {
+          const filename = img.split("/").pop(); // ✅ extract filename
+          const filePath = path.join(
+            process.cwd(),
+            "uploads",
+            "products",
+            filename
+          );
+          if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        }
       });
-      color.images = [];
+      color.images = []; // clear images for that color
     });
 
     await product.save();
