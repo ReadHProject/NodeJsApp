@@ -3,6 +3,12 @@ import cloudinary from "cloudinary";
 import { getDataUri } from "../utils/feature.js";
 import { generateRandomOTP } from "../utils/feature.js";
 import { Resend } from "resend";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 //REGISTER
 export const registerController = async (req, res) => {
@@ -313,18 +319,20 @@ export const updateProfilePicController = async (req, res) => {
       });
     }
 
+    const profileDir = path.join(process.cwd(), "uploads", "profile");
+
+    // ✅ Ensure uploads/profile folder exists
+    if (!fs.existsSync(profileDir)) {
+      fs.mkdirSync(profileDir, { recursive: true });
+    }
+
     const newFileName = req.file.filename;
     const newImagePath = `/uploads/profile/${newFileName}`;
     const oldFileName = user.profilePic?.public_id;
 
     // ✅ Delete old image from /uploads/profile if it exists
     if (oldFileName) {
-      const oldFilePath = path.join(
-        process.cwd(),
-        "uploads",
-        "profile",
-        oldFileName
-      );
+      const oldFilePath = path.join(profileDir, oldFileName);
       if (fs.existsSync(oldFilePath)) {
         fs.unlinkSync(oldFilePath);
       }
