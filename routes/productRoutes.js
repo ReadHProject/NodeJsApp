@@ -1,6 +1,7 @@
 import express from "express";
 import {
   createProductController,
+  deleteAllProductImagesController,
   deleteProductController,
   deleteProductImageController,
   getAllProductsController,
@@ -49,11 +50,26 @@ router.put(
 );
 
 //DELETE PRODUCT IMAGE
+// router.delete(
+//   "/delete-image/:id",
+//   isAuth,
+//   isAdmin,
+//   deleteProductImageController
+// );
+
 router.delete(
   "/delete-image/:id",
   isAuth,
   isAdmin,
   deleteProductImageController
+);
+
+//DELETE ALL PRODUCT IMAGE
+router.delete(
+  "/delete-image/all/:id",
+  isAuth,
+  isAdmin,
+  deleteAllProductImagesController
 );
 
 //DELETE PRODUCT

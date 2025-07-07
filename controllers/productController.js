@@ -395,63 +395,191 @@ export const updateProductImageController = async (req, res) => {
 };
 
 //DELETE PRODUCT IMAGE
+// export const deleteProductImageController = async (req, res) => {
+//   try {
+//     //FIND PRODUCT
+//     const product = await productModel.findById(req.params.id);
+
+//     //VALIDATION
+//     if (!product) {
+//       return res.status(404).send({
+//         success: false,
+//         message: "Product Not Found",
+//       });
+//     }
+//     // console.log(`req.params.id: ${req.params.id}`);
+//     // console.log(`req.query.id: ${req.query.id}`);
+
+//     //FIND IMAGE ID
+//     const id = req.query.id;
+//     if (!id) {
+//       return res.status(404).send({
+//         success: false,
+//         message: "Product image not found",
+//       });
+//     }
+
+//     let isExist = -1;
+//     product.images.forEach((item, index) => {
+//       if (item._id.toString() === id.toString()) isExist = index;
+//     });
+//     if (isExist < 0) {
+//       return res.status(404).send({
+//         success: false,
+//         message: "Product image not found",
+//       });
+//     }
+
+//     //DELETE
+//     await cloudinary.v2.uploader.destroy(product.images[isExist].public_id); //Delete image from cloudinary
+//     product.images.splice(isExist, 1); //Delete image from database
+//     await product.save();
+//     return res.status(200).send({
+//       success: true,
+//       message: "Product Image Deleted Successfully",
+//     });
+//   } catch (error) {
+//     console.log(error);
+//     //Cast Error || Object Id
+//     if (error.name === "CastError") {
+//       return res.status(500).send({
+//         success: false,
+//         message: `Invalid Id`,
+//       });
+//     }
+//     return res.status(500).send({
+//       success: false,
+//       message: `Error in Delete Product Image API: ${console.log(error)}`,
+//       error,
+//     });
+//   }
+// };
+
 export const deleteProductImageController = async (req, res) => {
   try {
-    //FIND PRODUCT
     const product = await productModel.findById(req.params.id);
-
-    //VALIDATION
     if (!product) {
-      return res.status(404).send({
-        success: false,
-        message: "Product Not Found",
-      });
-    }
-    // console.log(`req.params.id: ${req.params.id}`);
-    // console.log(`req.query.id: ${req.query.id}`);
-
-    //FIND IMAGE ID
-    const id = req.query.id;
-    if (!id) {
-      return res.status(404).send({
-        success: false,
-        message: "Product image not found",
-      });
+      return res
+        .status(404)
+        .send({ success: false, message: "Product Not Found" });
     }
 
-    let isExist = -1;
-    product.images.forEach((item, index) => {
-      if (item._id.toString() === id.toString()) isExist = index;
-    });
-    if (isExist < 0) {
-      return res.status(404).send({
-        success: false,
-        message: "Product image not found",
-      });
+    const { imageId, color } = req.query;
+
+    if (!imageId) {
+      return res
+        .status(400)
+        .send({ success: false, message: "Image ID is required" });
     }
 
-    //DELETE
-    await cloudinary.v2.uploader.destroy(product.images[isExist].public_id); //Delete image from cloudinary
-    product.images.splice(isExist, 1); //Delete image from database
+    if (color) {
+      // Delete from color images
+      const colorIndex = product.colors.findIndex((c) => c.color === color);
+      if (colorIndex < 0) {
+        return res
+          .status(404)
+          .send({ success: false, message: "Color not found" });
+      }
+
+      const imgIndex = product.colors[colorIndex].images.findIndex(
+        (img) => img._id.toString() === imageId
+      );
+      if (imgIndex < 0) {
+        return res
+          .status(404)
+          .send({ success: false, message: "Color image not found" });
+      }
+
+      const imageToDelete = product.colors[colorIndex].images[imgIndex];
+      const filePath = path.join(
+        process.cwd(),
+        "uploads",
+        "products",
+        imageToDelete.filename
+      );
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+
+      product.colors[colorIndex].images.splice(imgIndex, 1);
+    } else {
+      // Delete from general images
+      const imgIndex = product.images.findIndex(
+        (img) => img._id.toString() === imageId
+      );
+      if (imgIndex < 0) {
+        return res
+          .status(404)
+          .send({ success: false, message: "Product image not found" });
+      }
+
+      const imageToDelete = product.images[imgIndex];
+      const filePath = path.join(
+        process.cwd(),
+        "uploads",
+        "products",
+        imageToDelete.filename
+      );
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+
+      product.images.splice(imgIndex, 1);
+    }
+
     await product.save();
-    return res.status(200).send({
+
+    res
+      .status(200)
+      .send({ success: true, message: "Image deleted successfully" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ success: false, message: "Server Error", error });
+  }
+};
+
+//DELETE PRODUCT ALL IMAGES
+export const deleteAllProductImagesController = async (req, res) => {
+  try {
+    const product = await productModel.findById(req.params.id);
+    if (!product) {
+      return res
+        .status(404)
+        .send({ success: false, message: "Product not found" });
+    }
+
+    // Delete general images
+    product.images.forEach((img) => {
+      const filePath = path.join(
+        process.cwd(),
+        "uploads",
+        "products",
+        img.filename
+      );
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    });
+    product.images = [];
+
+    // Delete color images
+    product.colors.forEach((color) => {
+      color.images.forEach((img) => {
+        const filePath = path.join(
+          process.cwd(),
+          "uploads",
+          "products",
+          img.filename
+        );
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      });
+      color.images = [];
+    });
+
+    await product.save();
+
+    res.status(200).send({
       success: true,
-      message: "Product Image Deleted Successfully",
+      message: "All images deleted successfully",
+      product,
     });
   } catch (error) {
     console.log(error);
-    //Cast Error || Object Id
-    if (error.name === "CastError") {
-      return res.status(500).send({
-        success: false,
-        message: `Invalid Id`,
-      });
-    }
-    return res.status(500).send({
-      success: false,
-      message: `Error in Delete Product Image API: ${console.log(error)}`,
-      error,
-    });
+    res.status(500).send({ success: false, message: "Server Error", error });
   }
 };
 
@@ -479,6 +607,7 @@ export const deleteProductController = async (req, res) => {
     return res.status(200).send({
       success: true,
       message: "Product Deleted Successfully",
+      product,
     });
   } catch (error) {
     console.log(error);
