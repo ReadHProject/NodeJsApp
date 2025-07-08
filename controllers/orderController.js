@@ -16,24 +16,7 @@ export const createOrderController = async (req, res) => {
       totalAmount,
     } = req.body;
 
-    //VALIDATION
-    // if (
-    //   !shippingInfo ||
-    //   !orderItems ||
-    //   !paymentMethod ||
-    //   !paymentInfo ||
-    //   !itemPrice ||
-    //   !tax ||
-    //   !shippingCharges ||
-    //   !totalAmount
-    // ) {
-    //   return res.status(500).send({
-    //     success: false,
-    //     message: "Please provide all fields",
-    //   });
-    // }
-
-    //CREATE ORDER
+    // Create the order
     await orderModel.create({
       user: req.user._id,
       shippingInfo,
@@ -46,12 +29,16 @@ export const createOrderController = async (req, res) => {
       totalAmount,
     });
 
-    //STOCK UPDATE
+    // ✅ Update stock safely without fetching full product or saving
     for (let i = 0; i < orderItems.length; i++) {
-      //FIND PRODUCT
-      const product = await productModel.findById(orderItems[i].product);
-      product.stock -= orderItems[i].quantity;
-      await product.save();
+      const productId = orderItems[i].product;
+      const quantityOrdered = orderItems[i].quantity;
+
+      await productModel.findByIdAndUpdate(
+        productId,
+        { $inc: { stock: -quantityOrdered } }, // safely decrease stock
+        { new: true, runValidators: false } // avoid validation errors
+      );
     }
 
     return res.status(201).send({
@@ -62,7 +49,7 @@ export const createOrderController = async (req, res) => {
     console.log(error);
     return res.status(500).send({
       success: false,
-      message: `Error in Create Order API: ${console.log(error)}`,
+      message: `Error in Create Order API: ${error.message}`,
       error,
     });
   }
