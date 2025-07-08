@@ -80,7 +80,7 @@ export const increaseCartItem = async (req, res) => {
     const userId = req.user._id; // assuming you use auth middleware
     const { productId } = req.params;
 
-    const cart = await Cart.findOne({ user: userId });
+    const cart = await cartModel.findOne({ user: userId });
 
     if (!cart) return res.status(404).json({ message: "Cart not found" });
 
@@ -105,7 +105,7 @@ export const decreaseCartItem = async (req, res) => {
     const userId = req.user._id;
     const { productId } = req.params;
 
-    const cart = await Cart.findOne({ user: userId });
+    const cart = await cartModel.findOne({ user: userId });
 
     if (!cart) return res.status(404).json({ message: "Cart not found" });
 
