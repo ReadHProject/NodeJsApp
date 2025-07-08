@@ -297,6 +297,7 @@ export const updateProductImageController = async (req, res) => {
 
     const uploadedFiles = req.files || [];
 
+    // ✅ General Image update
     const generalFile = uploadedFiles.find(
       (f) => f.fieldname === "generalImage"
     );
@@ -355,14 +356,15 @@ export const updateProductImageController = async (req, res) => {
       product,
     });
   } catch (error) {
+    console.log(error);
     if (error.name === "CastError") {
-      return res.status(500).send({ success: false, message: `Invalid Id` });
+      return res
+        .status(400)
+        .send({ success: false, message: "Invalid Product ID" });
     }
-    return res.status(500).send({
-      success: false,
-      message: `Error in Update Product API`,
-      error,
-    });
+    return res
+      .status(500)
+      .send({ success: false, message: "Server Error", error });
   }
 };
 
