@@ -75,6 +75,56 @@ export const getCartController = async (req, res) => {
   }
 };
 
+export const increaseCartItem = async (req, res) => {
+  try {
+    const userId = req.user._id; // assuming you use auth middleware
+    const { productId } = req.params;
+
+    const cart = await Cart.findOne({ user: userId });
+
+    if (!cart) return res.status(404).json({ message: "Cart not found" });
+
+    const item = cart.items.find((i) => i.productId.toString() === productId);
+    if (item) {
+      if (item.quantity < 10) {
+        item.quantity += 1;
+        await cart.save();
+      } else {
+        return res.status(400).json({ message: "Max quantity reached" });
+      }
+    }
+
+    res.status(200).json({ success: true, cart });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const decreaseCartItem = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { productId } = req.params;
+
+    const cart = await Cart.findOne({ user: userId });
+
+    if (!cart) return res.status(404).json({ message: "Cart not found" });
+
+    const item = cart.items.find((i) => i.productId.toString() === productId);
+    if (item) {
+      if (item.quantity > 1) {
+        item.quantity -= 1;
+        await cart.save();
+      } else {
+        return res.status(400).json({ message: "Minimum quantity is 1" });
+      }
+    }
+
+    res.status(200).json({ success: true, cart });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // ➤ Remove Item from Cart
 export const removeFromCartController = async (req, res) => {
   try {
