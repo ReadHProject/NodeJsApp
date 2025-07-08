@@ -349,6 +349,17 @@ export const updateProductImageController = async (req, res) => {
 
     product.colors = newColorsList;
 
+    // ✅ Auto-calculate total stock from all sizes in all colors
+    let totalStock = 0;
+    product.colors.forEach((color) => {
+      if (color.sizes && color.sizes.length > 0) {
+        color.sizes.forEach((size) => {
+          totalStock += Number(size.stock || 0);
+        });
+      }
+    });
+    product.stock = totalStock; // ← This line updates the main stock field
+
     await product.save();
 
     return res.status(200).send({
