@@ -295,9 +295,22 @@ export const updateProductImageController = async (req, res) => {
         .send({ success: false, message: "Invalid colors JSON" });
     }
 
+    // ✅ Prevent duplicate colors in incoming data
+    const colorIds = parsedColors.map((c) => c.colorId);
+    const hasDuplicates = colorIds.some(
+      (id, idx) => colorIds.indexOf(id) !== idx
+    );
+    if (hasDuplicates) {
+      return res.status(400).send({
+        success: false,
+        message:
+          "Duplicate color detected. Please ensure each color is unique.",
+      });
+    }
+
     const uploadedFiles = req.files || [];
 
-    // ✅ General Image update
+    // ✅ Update General Image
     const generalFile = uploadedFiles.find(
       (f) => f.fieldname === "generalImage"
     );
@@ -338,7 +351,7 @@ export const updateProductImageController = async (req, res) => {
       return {
         colorId: incomingColor.colorId,
         colorName: incomingColor.colorName || existing?.colorName || "",
-        colorCode: incomingColor.colorCode || existing?.colorCode || "#000000", // ✅ FIXED
+        colorCode: incomingColor.colorCode || existing?.colorCode || "#000000",
         images: updatedImages,
         sizes:
           incomingColor.sizes?.length > 0
@@ -349,7 +362,7 @@ export const updateProductImageController = async (req, res) => {
 
     product.colors = newColorsList;
 
-    // ✅ Auto-calculate total stock from all sizes in all colors
+    // ✅ Auto-Calculate Total Stock
     let totalStock = 0;
     product.colors.forEach((color) => {
       if (color.sizes && color.sizes.length > 0) {
@@ -358,7 +371,7 @@ export const updateProductImageController = async (req, res) => {
         });
       }
     });
-    product.stock = totalStock; // ← This line updates the main stock field
+    product.stock = totalStock;
 
     await product.save();
 
