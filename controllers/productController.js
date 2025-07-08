@@ -278,50 +278,25 @@ export const updateProductController = async (req, res) => {
 export const updateProductImageController = async (req, res) => {
   try {
     const { colors } = req.body;
-    //FIND PRODUCT
+
     const product = await productModel.findById(req.params.id);
-
-    //VALIDATION
     if (!product) {
-      return res.status(404).send({
-        success: false,
-        message: "Product Not Found",
-      });
+      return res
+        .status(404)
+        .send({ success: false, message: "Product Not Found" });
     }
-
-    // console.log("req.files :", req.files);
-
-    // //CHECK FILE
-    // if (!req.files || req.files.length === 0) {
-    //   return res.status(500).send({
-    //     success: false,
-    //     message: "Please provide product images",
-    //   });
-    // }
 
     let parsedColors = [];
     try {
-      if (typeof req.body.colors === "string") {
-        parsedColors = JSON.parse(req.body.colors);
-      } else if (typeof req.body.colors === "object") {
-        parsedColors = req.body.colors; // already parsed
-      } else {
-        parsedColors = [];
-      }
+      parsedColors = typeof colors === "string" ? JSON.parse(colors) : colors;
     } catch (err) {
-      console.error("❌ Invalid colors JSON:", req.body.colors);
       return res
         .status(400)
         .send({ success: false, message: "Invalid colors JSON" });
     }
 
-    console.log("✅ Parsed Colors:", parsedColors);
-    console.log("✅ Uploaded Files:", req.files);
-
     const uploadedFiles = req.files || [];
-    console.log("uploadedFiles :", uploadedFiles);
 
-    // Update General Image if uploaded
     const generalFile = uploadedFiles.find(
       (f) => f.fieldname === "generalImage"
     );
@@ -333,48 +308,45 @@ export const updateProductImageController = async (req, res) => {
         },
       ];
     }
-    console.log("generalFile :", generalFile);
 
-    const updatedColors = product.colors.map((existingColor) => {
-      const incomingColor = parsedColors.find(
-        (c) => c.colorId === existingColor.colorId
+    const existingColorsMap = {};
+    product.colors.forEach((c) => {
+      existingColorsMap[c.colorId] = c;
+    });
+
+    const newColorsList = parsedColors.map((incomingColor) => {
+      const existing = existingColorsMap[incomingColor.colorId];
+
+      const matchedFiles = uploadedFiles.filter(
+        (f) => f.fieldname === incomingColor.colorId
       );
 
-      const matchedFiles = (req.files || []).filter(
-        (f) => f.fieldname === existingColor.colorId
-      );
+      let updatedImages = existing ? [...existing.images] : [];
 
-      let updatedImages = [...existingColor.images];
+      matchedFiles.forEach((file) => {
+        const fileIndex = parseInt(file.originalname.split("_")[1]);
+        const newImagePath = `/uploads/products/${file.filename}`;
 
-      // ✅ Append any new images
-      if (matchedFiles.length > 0) {
-        matchedFiles.forEach((file) => {
-          const fileIndex = parseInt(file.originalname.split("_")[1]);
+        if (!isNaN(fileIndex) && fileIndex < updatedImages.length) {
+          updatedImages[fileIndex] = newImagePath;
+        } else {
+          updatedImages.push(newImagePath);
+        }
+      });
 
-          const newImagePath = `/uploads/products/${file.filename}`;
-
-          if (!isNaN(fileIndex) && fileIndex < updatedImages.length) {
-            // Replace existing image
-            updatedImages[fileIndex] = newImagePath;
-          } else {
-            // ✅ Add new image (this line fixes your problem!)
-            updatedImages.push(newImagePath);
-          }
-        });
-      }
-
-      // ✅ Always update sizes if provided
       return {
-        ...existingColor,
+        colorId: incomingColor.colorId,
+        colorName: incomingColor.colorName || existing?.colorName || "",
         images: updatedImages,
         sizes:
-          incomingColor?.sizes?.length > 0
+          incomingColor.sizes?.length > 0
             ? incomingColor.sizes
-            : existingColor.sizes,
+            : existing?.sizes || [],
       };
     });
 
-    product.colors = updatedColors;
+    product.colors = newColorsList;
+
     await product.save();
 
     return res.status(200).send({
@@ -383,17 +355,12 @@ export const updateProductImageController = async (req, res) => {
       product,
     });
   } catch (error) {
-    console.log(error);
-    //Cast Error || Object Id
     if (error.name === "CastError") {
-      return res.status(500).send({
-        success: false,
-        message: `Invalid Id`,
-      });
+      return res.status(500).send({ success: false, message: `Invalid Id` });
     }
     return res.status(500).send({
       success: false,
-      message: `Error in Update Product API: ${console.log(error)}`,
+      message: `Error in Update Product API`,
       error,
     });
   }
