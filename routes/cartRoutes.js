@@ -1,0 +1,17 @@
+import express from "express";
+import {
+  addToCartController,
+  getCartController,
+  removeFromCartController,
+  clearCartController,
+} from "../controllers/cartController.js";
+import { isAuth } from "../middlewares/authMiddleware.js";
+
+const router = express.Router();
+
+router.post("/add", isAuth, addToCartController);
+router.get("/", isAuth, getCartController);
+router.delete("/remove/:productId", isAuth, removeFromCartController);
+router.delete("/clear", isAuth, clearCartController);
+
+export default router;
