@@ -15,23 +15,30 @@ export const addToCartController = async (req, res) => {
       color = "",
     } = req.body;
 
+    console.log("Incoming Cart Data:", req.body); // ✅ Add this to check incoming size & color
+
     let cart = await cartModel.findOne({ user: userId });
 
     if (!cart) {
+      // 🆕 No cart? Create one with this first item
       cart = await cartModel.create({
         user: userId,
         items: [{ productId, name, image, price, quantity, size, color }],
       });
     } else {
-      const existingItemIndex = cart.items.findIndex((item) =>
-        item.productId.equals(productId)
+      // 🆕 Fix: Match on productId + size + color (instead of just productId)
+      const existingItemIndex = cart.items.findIndex(
+        (item) =>
+          item.productId.equals(productId) &&
+          item.size === size &&
+          item.color === color
       );
 
       if (existingItemIndex > -1) {
-        // If product exists, update quantity
+        // ✅ Same product + same size + same color → increase quantity
         cart.items[existingItemIndex].quantity += quantity;
       } else {
-        // Else add new item
+        // ✅ Different size or color → Add as new line item
         cart.items.push({
           productId,
           name,
