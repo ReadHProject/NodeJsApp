@@ -338,6 +338,7 @@ export const updateProductImageController = async (req, res) => {
       return {
         colorId: incomingColor.colorId,
         colorName: incomingColor.colorName || existing?.colorName || "",
+        colorCode: incomingColor.colorCode || existing?.colorCode || "#000000", // ✅ FIXED
         images: updatedImages,
         sizes:
           incomingColor.sizes?.length > 0
