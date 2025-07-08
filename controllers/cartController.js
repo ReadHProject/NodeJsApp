@@ -5,14 +5,22 @@ import productModel from "../models/productModel.js";
 export const addToCartController = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { productId, name, image, price, quantity } = req.body;
+    const {
+      productId,
+      name,
+      image,
+      price,
+      quantity,
+      size = "",
+      color = "",
+    } = req.body;
 
     let cart = await cartModel.findOne({ user: userId });
 
     if (!cart) {
       cart = await cartModel.create({
         user: userId,
-        items: [{ productId, name, image, price, quantity }],
+        items: [{ productId, name, image, price, quantity, size, color }],
       });
     } else {
       const existingItemIndex = cart.items.findIndex((item) =>
@@ -24,7 +32,15 @@ export const addToCartController = async (req, res) => {
         cart.items[existingItemIndex].quantity += quantity;
       } else {
         // Else add new item
-        cart.items.push({ productId, name, image, price, quantity });
+        cart.items.push({
+          productId,
+          name,
+          image,
+          price,
+          quantity,
+          size,
+          color,
+        });
       }
 
       await cart.save();
