@@ -42,12 +42,9 @@ const ColorSchema = new mongoose.Schema({
   },
   sizes: [
     {
-      type: String,
-      required: true,
-      validate: {
-        validator: (arr) => arr.length > 0,
-        message: "At least one size must be selected per color.",
-      },
+      size: { type: String, required: true },
+      price: { type: Number, required: false }, // Optional: won't break old records
+      stock: { type: Number, required: false }, // Optional: won't break old records
     },
   ],
   images: {

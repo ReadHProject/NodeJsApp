@@ -161,11 +161,9 @@ export const createProductController = async (req, res) => {
     }
 
     const parsedColors = JSON.parse(colors || "[]");
-
     const uploadedFiles = req.files || [];
 
     const colorImages = parsedColors.map((color) => {
-      // Only take the freshly uploaded images for this color
       const matchedFiles = uploadedFiles.filter(
         (f) => f.fieldname === color.colorId
       );
@@ -176,19 +174,26 @@ export const createProductController = async (req, res) => {
         );
       }
 
+      if (!color.sizes || color.sizes.length < 1) {
+        throw new Error(
+          `Color ${color.colorName} must have at least one size with price and stock`
+        );
+      }
+
       const images = matchedFiles.map((f) => `/uploads/products/${f.filename}`);
 
       return {
-        ...color,
-        images, // ✅ Only the correct server paths, no mixing with frontend images
-        sizes: color.sizes || [],
+        colorId: color.colorId,
+        colorName: color.colorName,
+        colorCode: color.colorCode,
+        images,
+        sizes: color.sizes, // 👈 correct sizes array from frontend
       };
     });
 
     const generalFile = uploadedFiles.find(
       (f) => f.fieldname === "generalImage"
     );
-
     const generalImage = generalFile
       ? [
           {
