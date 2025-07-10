@@ -98,7 +98,7 @@ export const removeFromWishlistController = async (req, res) => {
   try {
     const userId = req.user._id;
     const { productId } = req.params;
-    const { size, color } = req.query;
+    const { size, color } = req.body;
 
     // Find user's wishlist
     const wishlist = await wishlistModel.findOne({ user: userId });
@@ -112,7 +112,7 @@ export const removeFromWishlistController = async (req, res) => {
 
     // Filter out the item to remove
     if (size && color) {
-      // Remove specific variant
+      // Remove specific variant with both size and color
       wishlist.items = wishlist.items.filter(
         (item) =>
           !(
@@ -120,6 +120,18 @@ export const removeFromWishlistController = async (req, res) => {
             item.size === size &&
             item.color === color
           )
+      );
+    } else if (size) {
+      // Remove specific variant with matching size only
+      wishlist.items = wishlist.items.filter(
+        (item) =>
+          !(item.productId.toString() === productId && item.size === size)
+      );
+    } else if (color) {
+      // Remove specific variant with matching color only
+      wishlist.items = wishlist.items.filter(
+        (item) =>
+          !(item.productId.toString() === productId && item.color === color)
       );
     } else {
       // Remove all variants of this product
