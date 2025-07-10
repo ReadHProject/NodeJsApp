@@ -154,6 +154,30 @@ export const removeFromCartController = async (req, res) => {
     const userId = req.user._id;
     const { productId } = req.params;
 
+    // First check if cart exists
+    const existingCart = await cartModel.findOne({ user: userId });
+
+    if (!existingCart) {
+      return res.status(404).json({
+        success: false,
+        message: "Cart not found",
+      });
+    }
+
+    // Check if item exists in cart before trying to remove it
+    const itemExists = existingCart.items.some(
+      (item) => item.productId.toString() === productId.toString()
+    );
+
+    if (!itemExists) {
+      return res.status(200).json({
+        success: true,
+        message: "Item already removed",
+        cart: existingCart,
+      });
+    }
+
+    // If item exists, remove it
     const cart = await cartModel.findOneAndUpdate(
       { user: userId },
       { $pull: { items: { productId } } },
