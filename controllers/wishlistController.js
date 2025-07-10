@@ -115,28 +115,25 @@ export const removeFromWishlistController = async (req, res) => {
       // Remove specific variant with both size and color
       wishlist.items = wishlist.items.filter(
         (item) =>
-          !(
-            item.productId.toString() === productId &&
-            item.size === size &&
-            item.color === color
-          )
+          item.productId.toString() === productId &&
+          item.size === size &&
+          item.color === color
       );
     } else if (size) {
       // Remove specific variant with matching size only
       wishlist.items = wishlist.items.filter(
-        (item) =>
-          !(item.productId.toString() === productId && item.size === size)
+        (item) => item.productId.toString() === productId && item.size === size
       );
     } else if (color) {
       // Remove specific variant with matching color only
       wishlist.items = wishlist.items.filter(
         (item) =>
-          !(item.productId.toString() === productId && item.color === color)
+          item.productId.toString() === productId && item.color === color
       );
     } else {
       // Remove all variants of this product
       wishlist.items = wishlist.items.filter(
-        (item) => item.productId.toString() !== productId
+        (item) => item.productId.toString() === productId
       );
     }
 
