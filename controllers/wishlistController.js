@@ -150,7 +150,7 @@ export const moveToCartController = async (req, res) => {
   try {
     const userId = req.user._id;
     const { productId } = req.params;
-    const { size, color } = req.query;
+    const { size, color } = req.body;
 
     // Find user's wishlist
     const wishlist = await wishlistModel.findOne({ user: userId });
