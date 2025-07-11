@@ -515,7 +515,6 @@ export const verifyOtpController = async (req, res) => {
     const user = await userModel.findOne({
       email,
       resetPasswordOtp: otp,
-      resetPasswordOtpExpires: { $gt: Date.now() },
     });
 
     if (!user) {
