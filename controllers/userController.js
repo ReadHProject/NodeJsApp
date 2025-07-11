@@ -128,19 +128,31 @@ export const loginController = async (req, res) => {
     //TOKEN
     const token = user.generateToken();
 
-    return res
-      .status(200)
-      .cookie("token", token, {
-        expires: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
-        secure: process.env.NODE_ENV === "development" ? true : false,
-        httpOnly: process.env.NODE_ENV === "development" ? true : false,
-      })
-      .send({
-        success: true,
-        message: "Login Successfully",
-        token,
-        user,
-      });
+    // Set cookie for backward compatibility
+    res.cookie("token", token, {
+      expires: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
+      secure: process.env.NODE_ENV === "development" ? true : false,
+      httpOnly: process.env.NODE_ENV === "development" ? true : false,
+    });
+
+    // Send token in response body for Bearer token auth
+    return res.status(200).send({
+      success: true,
+      message: "Login Successfully",
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        // Other non-sensitive user data
+        address: user.address,
+        city: user.city,
+        country: user.country,
+        phone: user.phone,
+        pic: user.pic,
+      },
+    });
   } catch (error) {
     console.log(error);
     return res.status(500).send({
@@ -196,17 +208,19 @@ export const getAllUsersController = async (req, res) => {
 //LOGOUT
 export const logoutController = async (req, res) => {
   try {
-    return res
-      .status(200)
-      .cookie("token", "", {
-        expires: new Date(Date.now()),
-        secure: process.env.NODE_ENV === "development" ? true : false,
-        httpOnly: process.env.NODE_ENV === "development" ? true : false,
-      })
-      .send({
-        success: true,
-        message: "Logout Successfully",
-      });
+    // Clear the cookie for backward compatibility
+    res.cookie("token", "", {
+      expires: new Date(Date.now()),
+      secure: process.env.NODE_ENV === "development" ? true : false,
+      httpOnly: process.env.NODE_ENV === "development" ? true : false,
+    });
+
+    // With Bearer token, most of the logout logic happens client-side
+    // by removing the token from AsyncStorage
+    return res.status(200).send({
+      success: true,
+      message: "Logout Successfully",
+    });
   } catch (error) {
     console.log(error);
     return res.status(500).send({

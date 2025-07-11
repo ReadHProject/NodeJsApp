@@ -110,6 +110,9 @@ export const removeFromWishlistController = async (req, res) => {
       });
     }
 
+    // Store original items length for comparison
+    const originalLength = wishlist.items.length;
+
     // Filter out the item to remove
     if (size && color) {
       // Remove specific variant with both size and color
@@ -140,6 +143,15 @@ export const removeFromWishlistController = async (req, res) => {
       );
     }
 
+    // Check if any items were removed
+    if (wishlist.items.length === originalLength) {
+      console.log("No items were removed from wishlist");
+    } else {
+      console.log(
+        `${originalLength - wishlist.items.length} items removed from wishlist`
+      );
+    }
+
     await wishlist.save();
 
     return res.status(200).json({
@@ -148,7 +160,7 @@ export const removeFromWishlistController = async (req, res) => {
       wishlist,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Error in removeFromWishlistController:", error);
     return res.status(500).json({
       success: false,
       message: "Error removing item from wishlist",

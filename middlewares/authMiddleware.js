@@ -4,7 +4,18 @@ import userModel from "../models/userModel.js";
 //USER AUTH
 export const isAuth = async (req, res, next) => {
   try {
-    const { token } = req.cookies;
+    // Check for token in Authorization header (Bearer token)
+    const authHeader = req.headers.authorization;
+    let token;
+
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      // Extract token from "Bearer [token]"
+      token = authHeader.split(" ")[1];
+    } else {
+      // Fallback to cookie for backward compatibility
+      token = req.cookies.token;
+    }
+
     //Validation
     if (!token || token == undefined) {
       return res.status(401).send({
