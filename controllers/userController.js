@@ -500,12 +500,10 @@ export const passwordResetOtpController = async (req, res) => {
 export const verifyOtpController = async (req, res) => {
   try {
     //GET OTP
-    const { otp, newPassword } = req.body;
-
-    const user = await userModel.findById(req.user._id);
+    const { otp, newPassword, email } = req.body;
 
     //VALIDATION
-    if (!newPassword || !otp) {
+    if (!newPassword || !otp || !email) {
       return res.status(500).send({
         success: false,
         message: "Please provide all fields",
@@ -526,6 +524,19 @@ export const verifyOtpController = async (req, res) => {
         remainingTime: Math.floor((req.session.otpExpires - Date.now()) / 1000),
       });
     }
+
+    //VALIDATION
+    if (!email) {
+      return res.status(500).send({
+        success: false,
+        message: "Please provide email",
+      });
+    }
+
+    //FIND USER WITH EMAIL
+    const user = await userModel.findOne({ email });
+
+    // const user = await userModel.findById(req.user._id);
 
     // console.log(otp);
     // console.log(req.session.otp);
