@@ -476,7 +476,7 @@ export const passwordResetOtpController = async (req, res) => {
     //Resend Config
     const resend = new Resend(process.env.RESEND_API_KEY);
 
-    await resend.emails.json({
+    await resend.emails.send({
       from: "My EcommerceApp <onboarding@resend.dev>",
       to: [email],
       subject: "Your OTP Code",
