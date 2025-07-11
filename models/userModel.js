@@ -54,6 +54,12 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "user",
     },
+    resetPasswordOtp: {
+      type: String,
+    },
+    resetPasswordOtpExpires: {
+      type: Date,
+    },
   },
   { timestamps: true }
 );
@@ -107,7 +113,7 @@ userSchema.methods.comparePassword = async function (plainPassword) {
 
 // ✅ return JWT.sign({ _id: this._id }, process.env.JWT_SECRET, { ... })
 // JWT.sign(...) creates a token.
-// { _id: this._id }: Adds the user’s _id inside the token.
+// { _id: this._id }: Adds the user's _id inside the token.
 // this._id refers to the current user instance.
 // process.env.JWT_SECRET: A secret key (from your .env file) used to secure the token.
 // { expiresIn: "7d" }: The token will expire in 7 days.
