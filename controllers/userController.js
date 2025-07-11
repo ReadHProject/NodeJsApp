@@ -450,7 +450,7 @@ export const passwordResetOtpController = async (req, res) => {
 
     //VALIDATION
     if (!email) {
-      return res.status(500).send({
+      return res.status(500).json({
         success: false,
         message: "Please provide email",
       });
@@ -460,7 +460,7 @@ export const passwordResetOtpController = async (req, res) => {
     const user = await userModel.findOne({ email });
     //VALIDATION
     if (!user) {
-      return res.status(500).send({
+      return res.status(500).json({
         success: false,
         message: "User Not Found..Check Your Email ID",
       });
@@ -468,29 +468,30 @@ export const passwordResetOtpController = async (req, res) => {
 
     const otp = generateRandomOTP();
 
+    // Store OTP in user document with expiration time
+    user.resetPasswordOtp = otp;
+    user.resetPasswordOtpExpires = Date.now() + 10 * 60 * 1000; // 10 Minutes
+    await user.save();
+
     //Resend Config
     const resend = new Resend(process.env.RESEND_API_KEY);
 
-    await resend.emails.send({
+    await resend.emails.json({
       from: "My EcommerceApp <onboarding@resend.dev>",
       to: [email],
       subject: "Your OTP Code",
       html: `<p>Your OTP is: <strong>${otp}</strong></p><p>This code will expire in 10 minutes.</p>`,
     });
 
-    req.session.otp = otp;
-    req.session.otpExpires = Date.now() + 10 * 60 * 1000; //10 Minutes
-
-    return res.status(200).send({
+    return res.status(200).json({
       success: true,
       message: "OTP Sent Successfully",
-      otp,
     });
   } catch (error) {
     console.log(error);
-    return res.status(500).send({
+    return res.status(500).json({
       success: false,
-      message: `Error in Password Reset OTP API: ${console.log(error)}`,
+      message: `Error in Password Reset OTP API: ${error.message}`,
       error,
     });
   }
@@ -504,61 +505,41 @@ export const verifyOtpController = async (req, res) => {
 
     //VALIDATION
     if (!newPassword || !otp || !email) {
-      return res.status(500).send({
+      return res.status(500).json({
         success: false,
         message: "Please provide all fields",
       });
     }
 
-    if (!req.session.otp || !req.session.otpExpires) {
-      return res.status(400).send({
-        success: false,
-        message: "OTP not found",
-      });
-    }
-
-    if (Date.now() > req.session.otpExpires) {
-      return res.status(400).send({
-        success: false,
-        message: "OTP expired",
-        remainingTime: Math.floor((req.session.otpExpires - Date.now()) / 1000),
-      });
-    }
-
-    //VALIDATION
-    if (!email) {
-      return res.status(500).send({
-        success: false,
-        message: "Please provide email",
-      });
-    }
-
     //FIND USER WITH EMAIL
-    const user = await userModel.findOne({ email });
+    const user = await userModel.findOne({
+      email,
+      resetPasswordOtp: otp,
+      resetPasswordOtpExpires: { $gt: Date.now() },
+    });
 
-    // const user = await userModel.findById(req.user._id);
-
-    // console.log(otp);
-    // console.log(req.session.otp);
-    if (otp.toString() == req.session.otp.toString()) {
-      user.password = newPassword;
-      await user.save();
-      return res.status(200).send({
-        success: true,
-        message: "Password Reset Successfully",
-      });
-    } else {
-      return res.status(400).send({
+    if (!user) {
+      return res.status(400).json({
         success: false,
-        message: "Invalid OTP",
-        otp: req.session.otp,
+        message: "Invalid or expired OTP",
       });
     }
+
+    // Update password and clear OTP fields
+    user.password = newPassword;
+    user.resetPasswordOtp = undefined;
+    user.resetPasswordOtpExpires = undefined;
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password Reset Successfully",
+    });
   } catch (error) {
     console.log(error);
-    return res.status(500).send({
+    return res.status(500).json({
       success: false,
-      message: `Error in Verify OTP API: ${console.log(error)}`,
+      message: `Error in Verify OTP API: ${error.message}`,
       error,
     });
   }
