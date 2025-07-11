@@ -62,10 +62,10 @@ router.put(
 router.post("/reset-password", isAuth, passwordResetController);
 
 //FORGOT PASSWORD WITH OTP
-router.post("/request-otp", isAuth, passwordResetOtpController);
+router.post("/request-otp", passwordResetOtpController);
 
 //VERIFY OTP
-router.post("/verify-otp", isAuth, verifyOtpController);
+router.post("/verify-otp", verifyOtpController);
 
 //EXPORT
 export default router;
