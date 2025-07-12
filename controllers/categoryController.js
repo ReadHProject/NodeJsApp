@@ -9,7 +9,7 @@ export const createCategoryController = async (req, res) => {
 
     //VALIDATION
     if (!category) {
-      return res.status(500).send({
+      return res.status(500).json({
         success: false,
         message: "Please provide category name",
       });
@@ -18,13 +18,13 @@ export const createCategoryController = async (req, res) => {
     //CREATE CATEGORY
     await categoryModel.create({ category });
 
-    return res.status(200).send({
+    return res.status(200).json({
       success: true,
       message: `${category} Category Created Successfully`,
     });
   } catch (error) {
     console.log(error);
-    return res.status(500).send({
+    return res.status(500).json({
       success: false,
       message: `Error in Create Category API: ${console.log(error)}`,
       error,
@@ -36,7 +36,7 @@ export const createCategoryController = async (req, res) => {
 export const getAllCategoryController = async (req, res) => {
   try {
     const categories = await categoryModel.find({});
-    return res.status(200).send({
+    return res.status(200).json({
       success: true,
       message: "All Categories Fetched Successfully",
       TotalCategory: categories.length,
@@ -44,7 +44,7 @@ export const getAllCategoryController = async (req, res) => {
     });
   } catch (error) {
     console.log(error);
-    return res.status(500).send({
+    return res.status(500).json({
       success: false,
       message: `Error in Get All Category API: ${console.log(error)}`,
       error,
@@ -59,7 +59,7 @@ export const deleteCategoryController = async (req, res) => {
 
     //VALIDATION
     if (!category) {
-      return res.status(404).send({
+      return res.status(404).json({
         success: false,
         message: "Category Not Found",
       });
@@ -78,7 +78,7 @@ export const deleteCategoryController = async (req, res) => {
     //DELETE CATEGORY
     await category.deleteOne();
 
-    return res.status(200).send({
+    return res.status(200).json({
       success: true,
       message: `${category.category} Category Deleted Successfully`,
     });
@@ -86,13 +86,13 @@ export const deleteCategoryController = async (req, res) => {
     console.log(error);
     //Cast Error || Object Id
     if (error.name === "CastError") {
-      return res.status(500).send({
+      return res.status(500).json({
         success: false,
         message: `Invalid Id`,
       });
     }
 
-    return res.status(500).send({
+    return res.status(500).json({
       success: false,
       message: `Error in Delete Category API: ${console.log(error)}`,
       error,
@@ -107,7 +107,7 @@ export const updateCategoryController = async (req, res) => {
 
     //VALIDATION
     if (!category) {
-      return res.status(404).send({
+      return res.status(404).json({
         success: false,
         message: "Category Not Found",
       });
@@ -132,7 +132,7 @@ export const updateCategoryController = async (req, res) => {
     //DELETE CATEGORY
     await category.save();
 
-    return res.status(200).send({
+    return res.status(200).json({
       success: true,
       message: `${category.category} Category Updated Successfully`,
     });
@@ -140,13 +140,13 @@ export const updateCategoryController = async (req, res) => {
     console.log(error);
     //Cast Error || Object Id
     if (error.name === "CastError") {
-      return res.status(500).send({
+      return res.status(500).json({
         success: false,
         message: `Invalid Id`,
       });
     }
 
-    return res.status(500).send({
+    return res.status(500).json({
       success: false,
       message: `Error in Update Category API: ${console.log(error)}`,
       error,
