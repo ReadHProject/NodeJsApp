@@ -21,7 +21,7 @@ export const getAllProductsController = async (req, res) => {
         // category: category ? category : undefined,
       })
       .populate("category");
-    return res.status(200).send({
+    return res.status(200).json({
       success: true,
       message: "All Products Fetched Successfully",
       totalProducts: products.length,
@@ -29,7 +29,7 @@ export const getAllProductsController = async (req, res) => {
     });
   } catch (error) {
     console.log(error);
-    return res.status(500).send({
+    return res.status(500).json({
       success: false,
       message: `Error in Get All Products API: ${console.log(error)}`,
     });
@@ -40,7 +40,7 @@ export const getAllProductsController = async (req, res) => {
 export const getTopProductsController = async (req, res) => {
   try {
     const products = await productModel.find({}).sort({ rating: -1 }).limit(3);
-    return res.status(200).send({
+    return res.status(200).json({
       success: true,
       message: "Top 3 Products Fetched Successfully",
       totalProducts: products.length,
@@ -48,7 +48,7 @@ export const getTopProductsController = async (req, res) => {
     });
   } catch (error) {
     console.log(error);
-    return res.status(500).send({
+    return res.status(500).json({
       success: false,
       message: `Error in Get Top Products API: ${console.log(error)}`,
     });
@@ -63,13 +63,13 @@ export const getSingleProductController = async (req, res) => {
 
     //VALIDATION
     if (!product) {
-      return res.status(404).send({
+      return res.status(404).json({
         success: false,
         message: "Product Not Found",
       });
     }
 
-    return res.status(200).send({
+    return res.status(200).json({
       success: true,
       message: "Single Product Fetched Successfully",
       product,
@@ -78,13 +78,13 @@ export const getSingleProductController = async (req, res) => {
     console.log(error);
     //Cast Error || Object Id
     if (error.name === "CastError") {
-      return res.status(500).send({
+      return res.status(500).json({
         success: false,
         message: `Invalid Id`,
       });
     }
 
-    return res.status(500).send({
+    return res.status(500).json({
       success: false,
       message: `Error in Get Single Product API: ${console.log(error)}`,
       error,
@@ -99,7 +99,7 @@ export const getSingleProductController = async (req, res) => {
 
 //     //VALIDATION
 //     // if (!name || !description || !price || !category || !stock) {
-//     //   return res.status(500).send({
+//     //   return res.status(500).json({
 //     //     success: false,
 //     //     message: "Please provide all fields",
 //     //   });
@@ -107,7 +107,7 @@ export const getSingleProductController = async (req, res) => {
 
 //     // console.log(req.file);
 //     if (!req.file) {
-//       return res.status(500).send({
+//       return res.status(500).json({
 //         success: false,
 //         message: "Please provide product images",
 //       });
@@ -134,14 +134,14 @@ export const getSingleProductController = async (req, res) => {
 //       stock,
 //       images: [image],
 //     });
-//     return res.status(201).send({
+//     return res.status(201).json({
 //       success: true,
 //       message: "Product Created Successfully",
 //       product,
 //     });
 //   } catch (error) {
 //     console.log(error);
-//     return res.status(500).send({
+//     return res.status(500).json({
 //       success: false,
 //       message: `Error in Create Product API: ${console.log(error)}`,
 //       error,
@@ -154,7 +154,7 @@ export const createProductController = async (req, res) => {
     const { name, description, price, stock, category, colors } = req.body;
 
     if (!name || !description || !price || !stock || !category || !colors) {
-      return res.status(400).send({
+      return res.status(400).json({
         success: false,
         message: "All fields are required",
       });
@@ -213,14 +213,14 @@ export const createProductController = async (req, res) => {
       colors: colorImages,
     });
 
-    return res.status(201).send({
+    return res.status(201).json({
       success: true,
       message: "Product Created Successfully",
       product,
     });
   } catch (err) {
     console.log(err);
-    res.status(500).send({
+    res.status(500).json({
       success: false,
       message: err.message || "Something went wrong",
     });
@@ -235,7 +235,7 @@ export const updateProductController = async (req, res) => {
 
     //VALIDATION
     if (!product) {
-      return res.status(404).send({
+      return res.status(404).json({
         success: false,
         message: "Product Not Found",
       });
@@ -252,7 +252,7 @@ export const updateProductController = async (req, res) => {
 
     await product.save();
 
-    return res.status(200).send({
+    return res.status(200).json({
       success: true,
       message: "Product Updated Successfully",
       product,
@@ -261,12 +261,12 @@ export const updateProductController = async (req, res) => {
     console.log(error);
     //Cast Error || Object Id
     if (error.name === "CastError") {
-      return res.status(500).send({
+      return res.status(500).json({
         success: false,
         message: `Invalid Id`,
       });
     }
-    return res.status(500).send({
+    return res.status(500).json({
       success: false,
       message: `Error in Update Product API: ${console.log(error)}`,
       error,
@@ -283,7 +283,7 @@ export const updateProductImageController = async (req, res) => {
     if (!product) {
       return res
         .status(404)
-        .send({ success: false, message: "Product Not Found" });
+        .json({ success: false, message: "Product Not Found" });
     }
 
     let parsedColors = [];
@@ -292,7 +292,7 @@ export const updateProductImageController = async (req, res) => {
     } catch (err) {
       return res
         .status(400)
-        .send({ success: false, message: "Invalid colors JSON" });
+        .json({ success: false, message: "Invalid colors JSON" });
     }
 
     // ✅ Prevent duplicate colors in incoming data
@@ -301,7 +301,7 @@ export const updateProductImageController = async (req, res) => {
       (id, idx) => colorIds.indexOf(id) !== idx
     );
     if (hasDuplicates) {
-      return res.status(400).send({
+      return res.status(400).json({
         success: false,
         message:
           "Duplicate color detected. Please ensure each color is unique.",
@@ -375,7 +375,7 @@ export const updateProductImageController = async (req, res) => {
 
     await product.save();
 
-    return res.status(200).send({
+    return res.status(200).json({
       success: true,
       message: "Product Updated Successfully",
       product,
@@ -385,11 +385,11 @@ export const updateProductImageController = async (req, res) => {
     if (error.name === "CastError") {
       return res
         .status(400)
-        .send({ success: false, message: "Invalid Product ID" });
+        .json({ success: false, message: "Invalid Product ID" });
     }
     return res
       .status(500)
-      .send({ success: false, message: "Server Error", error });
+      .json({ success: false, message: "Server Error", error });
   }
 };
 
@@ -401,7 +401,7 @@ export const updateProductImageController = async (req, res) => {
 
 //     //VALIDATION
 //     if (!product) {
-//       return res.status(404).send({
+//       return res.status(404).json({
 //         success: false,
 //         message: "Product Not Found",
 //       });
@@ -412,7 +412,7 @@ export const updateProductImageController = async (req, res) => {
 //     //FIND IMAGE ID
 //     const id = req.query.id;
 //     if (!id) {
-//       return res.status(404).send({
+//       return res.status(404).json({
 //         success: false,
 //         message: "Product image not found",
 //       });
@@ -423,7 +423,7 @@ export const updateProductImageController = async (req, res) => {
 //       if (item._id.toString() === id.toString()) isExist = index;
 //     });
 //     if (isExist < 0) {
-//       return res.status(404).send({
+//       return res.status(404).json({
 //         success: false,
 //         message: "Product image not found",
 //       });
@@ -433,7 +433,7 @@ export const updateProductImageController = async (req, res) => {
 //     await cloudinary.v2.uploader.destroy(product.images[isExist].public_id); //Delete image from cloudinary
 //     product.images.splice(isExist, 1); //Delete image from database
 //     await product.save();
-//     return res.status(200).send({
+//     return res.status(200).json({
 //       success: true,
 //       message: "Product Image Deleted Successfully",
 //     });
@@ -441,12 +441,12 @@ export const updateProductImageController = async (req, res) => {
 //     console.log(error);
 //     //Cast Error || Object Id
 //     if (error.name === "CastError") {
-//       return res.status(500).send({
+//       return res.status(500).json({
 //         success: false,
 //         message: `Invalid Id`,
 //       });
 //     }
-//     return res.status(500).send({
+//     return res.status(500).json({
 //       success: false,
 //       message: `Error in Delete Product Image API: ${console.log(error)}`,
 //       error,
@@ -460,7 +460,7 @@ export const deleteProductImageController = async (req, res) => {
     if (!product) {
       return res
         .status(404)
-        .send({ success: false, message: "Product Not Found" });
+        .json({ success: false, message: "Product Not Found" });
     }
 
     const { imageUrl, color } = req.query;
@@ -468,7 +468,7 @@ export const deleteProductImageController = async (req, res) => {
     if (!imageUrl) {
       return res
         .status(400)
-        .send({ success: false, message: "Image URL is required" });
+        .json({ success: false, message: "Image URL is required" });
     }
 
     if (color) {
@@ -477,7 +477,7 @@ export const deleteProductImageController = async (req, res) => {
       if (colorIndex < 0) {
         return res
           .status(404)
-          .send({ success: false, message: "Color not found" });
+          .json({ success: false, message: "Color not found" });
       }
 
       const imageIndex = product.colors[colorIndex].images.findIndex(
@@ -486,7 +486,7 @@ export const deleteProductImageController = async (req, res) => {
       if (imageIndex < 0) {
         return res
           .status(404)
-          .send({ success: false, message: "Color image not found" });
+          .json({ success: false, message: "Color image not found" });
       }
 
       const filePath = path.join(process.cwd(), imageUrl);
@@ -499,7 +499,7 @@ export const deleteProductImageController = async (req, res) => {
       if (imgIndex < 0) {
         return res
           .status(404)
-          .send({ success: false, message: "Product image not found" });
+          .json({ success: false, message: "Product image not found" });
       }
 
       const filePath = path.join(process.cwd(), product.images[imgIndex].url);
@@ -512,10 +512,10 @@ export const deleteProductImageController = async (req, res) => {
 
     return res
       .status(200)
-      .send({ success: true, message: "Image deleted successfully", product });
+      .json({ success: true, message: "Image deleted successfully", product });
   } catch (error) {
     console.log(error);
-    res.status(500).send({ success: false, message: "Server Error", error });
+    res.status(500).json({ success: false, message: "Server Error", error });
   }
 };
 
@@ -526,7 +526,7 @@ export const deleteAllProductImagesController = async (req, res) => {
     if (!product) {
       return res
         .status(404)
-        .send({ success: false, message: "Product not found" });
+        .json({ success: false, message: "Product not found" });
     }
 
     // ✅ Delete general images safely
@@ -573,14 +573,14 @@ export const deleteAllProductImagesController = async (req, res) => {
 
     await product.save();
 
-    res.status(200).send({
+    res.status(200).json({
       success: true,
       message: "All images deleted successfully",
       product,
     });
   } catch (error) {
     console.log("❌ Error in deleteAllProductImagesController:", error);
-    res.status(500).send({ success: false, message: "Server Error", error });
+    res.status(500).json({ success: false, message: "Server Error", error });
   }
 };
 
@@ -592,7 +592,7 @@ export const deleteAllProductImagesController = async (req, res) => {
 
 //     //VALIDATION
 //     if (!product) {
-//       return res.status(404).send({
+//       return res.status(404).json({
 //         success: false,
 //         message: "Product Not Found",
 //       });
@@ -605,7 +605,7 @@ export const deleteAllProductImagesController = async (req, res) => {
 
 //     //DELETE PRODUCT
 //     await product.deleteOne();
-//     return res.status(200).send({
+//     return res.status(200).json({
 //       success: true,
 //       message: "Product Deleted Successfully",
 //       product,
@@ -614,12 +614,12 @@ export const deleteAllProductImagesController = async (req, res) => {
 //     console.log(error);
 //     //Cast Error || Object Id
 //     if (error.name === "CastError") {
-//       return res.status(500).send({
+//       return res.status(500).json({
 //         success: false,
 //         message: `Invalid Id`,
 //       });
 //     }
-//     return res.status(500).send({
+//     return res.status(500).json({
 //       success: false,
 //       message: `Error in Delete Product Image API: ${console.log(error)}`,
 //       error,
@@ -631,7 +631,7 @@ export const deleteProductController = async (req, res) => {
   try {
     const product = await productModel.findById(req.params.id);
     if (!product) {
-      return res.status(404).send({
+      return res.status(404).json({
         success: false,
         message: "Product Not Found",
       });
@@ -670,19 +670,19 @@ export const deleteProductController = async (req, res) => {
     // Delete product from DB
     await product.deleteOne();
 
-    return res.status(200).send({
+    return res.status(200).json({
       success: true,
       message: "Product deleted successfully",
     });
   } catch (error) {
     console.log(error);
     if (error.name === "CastError") {
-      return res.status(400).send({
+      return res.status(400).json({
         success: false,
         message: "Invalid Product ID",
       });
     }
-    return res.status(500).send({
+    return res.status(500).json({
       success: false,
       message: "Server Error",
       error,
@@ -700,7 +700,7 @@ export const productReviewController = async (req, res) => {
 
     //VALIDATION
     if (!product) {
-      return res.status(404).send({
+      return res.status(404).json({
         success: false,
         message: "Product Not Found",
       });
@@ -713,7 +713,7 @@ export const productReviewController = async (req, res) => {
 
     //VALIDATION
     if (alreadyReviewed) {
-      return res.status(400).send({
+      return res.status(400).json({
         success: false,
         message: "Product Already Reviewed",
       });
@@ -737,7 +737,7 @@ export const productReviewController = async (req, res) => {
 
     //SAVE
     await product.save();
-    return res.status(200).send({
+    return res.status(200).json({
       success: true,
       message: "Product Reviewed Successfully",
       product,
@@ -746,12 +746,12 @@ export const productReviewController = async (req, res) => {
     console.log(error);
     //Cast Error || Object Id
     if (error.name === "CastError") {
-      return res.status(500).send({
+      return res.status(500).json({
         success: false,
         message: `Invalid Id`,
       });
     }
-    return res.status(500).send({
+    return res.status(500).json({
       success: false,
       message: `Error in Create Product API: ${console.log(error)}`,
       error,
