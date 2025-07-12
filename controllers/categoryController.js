@@ -135,6 +135,7 @@ export const updateCategoryController = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: `${category.category} Category Updated Successfully`,
+      category,
     });
   } catch (error) {
     console.log(error);
