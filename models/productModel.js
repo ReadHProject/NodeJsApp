@@ -72,6 +72,45 @@ const productSchema = new mongoose.Schema(
       type: Number,
       required: [true, "Product price is required"],
     },
+    //add discount price in percentage or in value
+    discountper: {
+      type: String,
+      default: 0,
+      description:
+        "Discount percentage or value that will be used to calculate discountprice",
+      set: function (val) {
+        // Calculate discountprice when discountper is set
+        if (this.price) {
+          // Check if the value contains a % symbol
+          if (typeof val === "string" && val.includes("%")) {
+            // It's a percentage - extract the numeric value
+            const percentValue = parseFloat(val);
+            if (!isNaN(percentValue)) {
+              const percentageDiscount = (this.price * percentValue) / 100;
+              // Ensure percentage discount doesn't exceed price
+              const safeDiscount = Math.min(percentageDiscount, this.price);
+              this.discountprice = this.price - safeDiscount;
+            }
+          } else {
+            // It's an absolute value
+            const numericVal = parseFloat(val);
+            if (!isNaN(numericVal)) {
+              // Ensure discount doesn't exceed price
+              const absoluteDiscount = Math.min(
+                Math.abs(numericVal),
+                this.price
+              );
+              this.discountprice = this.price - absoluteDiscount;
+            }
+          }
+        }
+        return val;
+      },
+    },
+    discountprice: {
+      type: Number,
+      default: 0,
+    },
     stock: {
       type: Number,
       required: [true, "Product stock is required"],
