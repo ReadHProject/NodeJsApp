@@ -17,6 +17,50 @@ export const addToCartController = async (req, res) => {
 
     console.log("Incoming Cart Data:", req.body); // ✅ Add this to check incoming size & color
 
+    // Find the product to update its stock
+    const product = await productModel.findById(productId);
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
+
+    // Check if product has enough stock
+    if (product.stock < quantity) {
+      return res.status(400).json({
+        success: false,
+        message: "Not enough stock available",
+      });
+    }
+
+    // For size-specific stock updates
+    if (size && color) {
+      // Find the color
+      const colorObj = product.colors.find((c) => c.colorName === color);
+      if (colorObj) {
+        // Find the size
+        const sizeObj = colorObj.sizes.find((s) => s.size === size);
+        if (sizeObj) {
+          // Check if size has enough stock
+          if (sizeObj.stock < quantity) {
+            return res.status(400).json({
+              success: false,
+              message: `Not enough stock available for size ${size}`,
+            });
+          }
+
+          // Update size stock
+          sizeObj.stock -= quantity;
+        }
+      }
+    }
+
+    // Update general product stock
+    product.stock -= quantity;
+    await product.save();
+
     let cart = await cartModel.findOne({ user: userId });
 
     if (!cart) {
@@ -110,6 +154,53 @@ export const increaseCartItem = async (req, res) => {
     const item = cart.items.find((i) => i.productId.toString() === productId);
     if (item) {
       if (item.quantity < 10) {
+        // Find the product to update its stock
+        const product = await productModel.findById(productId);
+
+        if (!product) {
+          return res.status(404).json({
+            success: false,
+            message: "Product not found",
+          });
+        }
+
+        // Check if product has enough stock
+        if (product.stock < 1) {
+          return res.status(400).json({
+            success: false,
+            message: "Not enough stock available",
+          });
+        }
+
+        // For size-specific stock updates
+        if (item.size && item.color) {
+          // Find the color
+          const colorObj = product.colors.find(
+            (c) => c.colorName === item.color
+          );
+          if (colorObj) {
+            // Find the size
+            const sizeObj = colorObj.sizes.find((s) => s.size === item.size);
+            if (sizeObj) {
+              // Check if size has enough stock
+              if (sizeObj.stock < 1) {
+                return res.status(400).json({
+                  success: false,
+                  message: `Not enough stock available for size ${item.size}`,
+                });
+              }
+
+              // Update size stock
+              sizeObj.stock -= 1;
+            }
+          }
+        }
+
+        // Update general product stock
+        product.stock -= 1;
+        await product.save();
+
+        // Increase cart item quantity
         item.quantity += 1;
         await cart.save();
       } else {
@@ -135,6 +226,37 @@ export const decreaseCartItem = async (req, res) => {
     const item = cart.items.find((i) => i.productId.toString() === productId);
     if (item) {
       if (item.quantity > 1) {
+        // Find the product to update its stock
+        const product = await productModel.findById(productId);
+
+        if (!product) {
+          return res.status(404).json({
+            success: false,
+            message: "Product not found",
+          });
+        }
+
+        // For size-specific stock updates
+        if (item.size && item.color) {
+          // Find the color
+          const colorObj = product.colors.find(
+            (c) => c.colorName === item.color
+          );
+          if (colorObj) {
+            // Find the size
+            const sizeObj = colorObj.sizes.find((s) => s.size === item.size);
+            if (sizeObj) {
+              // Update size stock
+              sizeObj.stock += 1;
+            }
+          }
+        }
+
+        // Update general product stock
+        product.stock += 1;
+        await product.save();
+
+        // Decrease cart item quantity
         item.quantity -= 1;
         await cart.save();
       } else {
@@ -165,11 +287,11 @@ export const removeFromCartController = async (req, res) => {
     }
 
     // Check if item exists in cart before trying to remove it
-    const itemExists = existingCart.items.some(
+    const itemIndex = existingCart.items.findIndex(
       (item) => item.productId.toString() === productId.toString()
     );
 
-    if (!itemExists) {
+    if (itemIndex === -1) {
       return res.status(200).json({
         success: true,
         message: "Item already removed",
@@ -177,17 +299,40 @@ export const removeFromCartController = async (req, res) => {
       });
     }
 
-    // If item exists, remove it
-    const cart = await cartModel.findOneAndUpdate(
-      { user: userId },
-      { $pull: { items: { productId } } },
-      { new: true }
-    );
+    // Get the item before removing it
+    const item = existingCart.items[itemIndex];
+
+    // Find the product to update its stock
+    const product = await productModel.findById(productId);
+
+    if (product) {
+      // For size-specific stock updates
+      if (item.size && item.color) {
+        // Find the color
+        const colorObj = product.colors.find((c) => c.colorName === item.color);
+        if (colorObj) {
+          // Find the size
+          const sizeObj = colorObj.sizes.find((s) => s.size === item.size);
+          if (sizeObj) {
+            // Update size stock
+            sizeObj.stock += item.quantity;
+          }
+        }
+      }
+
+      // Update general product stock
+      product.stock += item.quantity;
+      await product.save();
+    }
+
+    // Remove the item from the cart
+    existingCart.items.splice(itemIndex, 1);
+    await existingCart.save();
 
     return res.status(200).json({
       success: true,
       message: "Item removed from cart",
-      cart,
+      cart: existingCart,
     });
   } catch (error) {
     console.error(error);
@@ -203,7 +348,40 @@ export const removeFromCartController = async (req, res) => {
 export const clearCartController = async (req, res) => {
   try {
     const userId = req.user._id;
-    await cartModel.findOneAndUpdate({ user: userId }, { items: [] });
+    const cart = await cartModel.findOne({ user: userId });
+
+    if (cart && cart.items.length > 0) {
+      // Return all items in cart to stock
+      for (const item of cart.items) {
+        const product = await productModel.findById(item.productId);
+
+        if (product) {
+          // For size-specific stock updates
+          if (item.size && item.color) {
+            // Find the color
+            const colorObj = product.colors.find(
+              (c) => c.colorName === item.color
+            );
+            if (colorObj) {
+              // Find the size
+              const sizeObj = colorObj.sizes.find((s) => s.size === item.size);
+              if (sizeObj) {
+                // Update size stock
+                sizeObj.stock += item.quantity;
+              }
+            }
+          }
+
+          // Update general product stock
+          product.stock += item.quantity;
+          await product.save();
+        }
+      }
+
+      // Clear the cart
+      cart.items = [];
+      await cart.save();
+    }
 
     return res.status(200).json({
       success: true,
