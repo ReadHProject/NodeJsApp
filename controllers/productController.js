@@ -348,15 +348,24 @@ export const updateProductImageController = async (req, res) => {
         }
       });
 
+      // Ensure sizes properly carry over discount values
+      const updatedSizes =
+        incomingColor.sizes?.length > 0
+          ? incomingColor.sizes.map((size) => ({
+              size: size.size,
+              price: Number(size.price) || 0,
+              stock: Number(size.stock) || 0,
+              discountper: size.discountper || "0",
+              discountprice: Number(size.discountprice) || 0,
+            }))
+          : existing?.sizes || [];
+
       return {
         colorId: incomingColor.colorId,
         colorName: incomingColor.colorName || existing?.colorName || "",
         colorCode: incomingColor.colorCode || existing?.colorCode || "#000000",
         images: updatedImages,
-        sizes:
-          incomingColor.sizes?.length > 0
-            ? incomingColor.sizes
-            : existing?.sizes || [],
+        sizes: updatedSizes,
       };
     });
 
