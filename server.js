@@ -67,10 +67,30 @@ app.use(
   })
 );
 
+// app.use(
+//   cors({
+//     origin: "http://localhost:8081", // your frontend address
+//     credentials: true, // allow cookies
+//   })
+// );
+
 app.use(
   cors({
-    origin: "http://localhost:8081", // your frontend address
-    credentials: true, // allow cookies
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true); // allow non-browser requests like curl/postman
+
+      const whitelist = [
+        "http://localhost:8081",
+        "https://nodejsapp-hfpl.onrender.com",
+      ];
+
+      if (whitelist.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
   })
 );
 
