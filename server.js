@@ -77,14 +77,15 @@ app.use(
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin) return callback(null, true); // allow non-browser requests like curl/postman
+      console.log("CORS request from origin:", origin);
 
       const whitelist = [
         "http://localhost:8081",
-        "https://nodejsapp-hfpl.onrender.com",
+        "http://localhost:8080",
+        "https://nodejsapp-hfpl.onrender.com", // Add your actual frontend here
       ];
 
-      if (whitelist.includes(origin)) {
+      if (!origin || whitelist.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
