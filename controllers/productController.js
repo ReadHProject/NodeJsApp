@@ -289,6 +289,10 @@ export const updateProductImageController = async (req, res) => {
     let parsedColors = [];
     try {
       parsedColors = typeof colors === "string" ? JSON.parse(colors) : colors;
+      console.log(
+        "Parsed Colors from request:",
+        JSON.stringify(parsedColors, null, 2)
+      );
     } catch (err) {
       return res
         .status(400)
@@ -351,13 +355,21 @@ export const updateProductImageController = async (req, res) => {
       // Ensure sizes properly carry over discount values
       const updatedSizes =
         incomingColor.sizes?.length > 0
-          ? incomingColor.sizes.map((size) => ({
-              size: size.size,
-              price: Number(size.price) || 0,
-              stock: Number(size.stock) || 0,
-              discountper: size.discountper || "0",
-              discountprice: Number(size.discountprice) || 0,
-            }))
+          ? incomingColor.sizes.map((size) => {
+              console.log(`Size ${size.size} data:`, {
+                price: size.price,
+                discountper: size.discountper,
+                discountprice: size.discountprice,
+              });
+
+              return {
+                size: size.size,
+                price: Number(size.price) || 0,
+                stock: Number(size.stock) || 0,
+                discountper: size.discountper || "0",
+                discountprice: Number(size.discountprice) || 0,
+              };
+            })
           : existing?.sizes || [];
 
       return {
