@@ -96,6 +96,10 @@ const productSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",
     },
+    subcategory: {
+      type: String,
+      default: "",
+    },
     images: [
       {
         public_id: String,

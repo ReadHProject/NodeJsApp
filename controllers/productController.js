@@ -151,7 +151,8 @@ export const getSingleProductController = async (req, res) => {
 
 export const createProductController = async (req, res) => {
   try {
-    const { name, description, price, stock, category, colors } = req.body;
+    const { name, description, price, stock, category, subcategory, colors } =
+      req.body;
 
     if (!name || !description || !price || !stock || !category || !colors) {
       return res.status(400).json({
@@ -209,6 +210,7 @@ export const createProductController = async (req, res) => {
       price,
       stock,
       category,
+      subcategory: subcategory || "", // Add subcategory field with default empty string
       images: generalImage,
       colors: colorImages,
     });
@@ -242,13 +244,16 @@ export const updateProductController = async (req, res) => {
     }
 
     //UPDATE PRODUCT
-    const { name, description, price, category, stock } = req.body;
+    const { name, description, price, category, stock, subcategory } = req.body;
+    console.log("Updating product with subcategory:", subcategory); // Debug log
+
     //VALIDATION AND UPDATE
     if (name) product.name = name;
     if (description) product.description = description;
     if (price) product.price = price;
     if (category) product.category = category;
     if (stock) product.stock = stock;
+    product.subcategory = subcategory || ""; // Always update subcategory field
 
     await product.save();
 
@@ -277,13 +282,18 @@ export const updateProductController = async (req, res) => {
 //UPDATE PRODUCT IMAGE
 export const updateProductImageController = async (req, res) => {
   try {
-    const { colors } = req.body;
+    const { colors, subcategory } = req.body;
 
     const product = await productModel.findById(req.params.id);
     if (!product) {
       return res
         .status(404)
         .json({ success: false, message: "Product Not Found" });
+    }
+
+    // Update subcategory if provided
+    if (subcategory !== undefined) {
+      product.subcategory = subcategory;
     }
 
     let parsedColors = [];
