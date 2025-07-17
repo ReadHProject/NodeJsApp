@@ -5,7 +5,7 @@ import productModel from "../models/productModel.js";
 export const createCategoryController = async (req, res) => {
   try {
     //GET CATEGORY
-    const { category } = req.body;
+    const { category, subcategories = [] } = req.body;
 
     //VALIDATION
     if (!category) {
@@ -16,7 +16,7 @@ export const createCategoryController = async (req, res) => {
     }
 
     //CREATE CATEGORY
-    await categoryModel.create({ category });
+    await categoryModel.create({ category, subcategories });
 
     return res.status(200).json({
       success: true,
@@ -114,7 +114,8 @@ export const updateCategoryController = async (req, res) => {
     }
 
     //GET NEW CATEGORY
-    const { updateCategory } = req.body;
+    const { updateCategory, subcategories } = req.body;
+    console.log("Update Category Request Body:", req.body);
 
     //FIND PRODUCT WITH THIS CATEGORY ID
     const products = await productModel.find({ category: category._id });
@@ -129,7 +130,12 @@ export const updateCategoryController = async (req, res) => {
     //UPDATE CATEGORY
     if (updateCategory) category.category = updateCategory;
 
-    //DELETE CATEGORY
+    // Update subcategories if provided
+    if (subcategories !== undefined) {
+      category.subcategories = subcategories;
+    }
+
+    //SAVE CATEGORY
     await category.save();
 
     return res.status(200).json({
