@@ -6,6 +6,13 @@ const categorySchema = new mongoose.Schema(
       type: String,
       required: [true, "Category name is required"],
     },
+    subcategories: [
+      {
+        type: String,
+        required: [true, "SubCategory name is required"],
+        default: [],
+      },
+    ],
   },
   { timestamps: true }
 );
