@@ -543,3 +543,43 @@ export const verifyOtpController = async (req, res) => {
     });
   }
 };
+
+//UPDATE SAVED ADDRESSES
+export const updateSavedAddressesController = async (req, res) => {
+  try {
+    const { savedAddresses } = req.body;
+
+    if (!savedAddresses || !Array.isArray(savedAddresses)) {
+      return res.status(400).send({
+        success: false,
+        message: "Invalid addresses format",
+      });
+    }
+
+    const user = await userModel.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).send({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Update saved addresses
+    user.savedAddresses = savedAddresses;
+    await user.save();
+
+    return res.status(200).send({
+      success: true,
+      message: "Saved addresses updated successfully",
+      savedAddresses: user.savedAddresses,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
+      success: false,
+      message: `Error in Update Saved Addresses API: ${error.message}`,
+      error,
+    });
+  }
+};

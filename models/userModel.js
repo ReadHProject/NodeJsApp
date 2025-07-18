@@ -45,6 +45,10 @@ const userSchema = new mongoose.Schema(
         type: String,
       },
     },
+    savedAddresses: {
+      type: Array,
+      default: [],
+    },
     answer: {
       type: String,
       required: [true, "answer is required"],

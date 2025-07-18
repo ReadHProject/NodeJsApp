@@ -10,6 +10,7 @@ import {
   updatePasswordController,
   updateProfileController,
   updateProfilePicController,
+  updateSavedAddressesController,
   verifyOtpController,
 } from "../controllers/userController.js";
 import { isAdmin, isAuth } from "../middlewares/authMiddleware.js";
@@ -57,6 +58,9 @@ router.put(
   profileUpload,
   updateProfilePicController
 );
+
+//UPDATE SAVED ADDRESSES
+router.put("/update-saved-addresses", isAuth, updateSavedAddressesController);
 
 //FORGOT PASSWORD
 router.post("/reset-password", isAuth, passwordResetController);

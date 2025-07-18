@@ -36,7 +36,8 @@ const orderSchema = new mongoose.Schema(
         },
         images: {
           type: String,
-          required: [true, "Product image is required"],
+          required: false,
+          default: "https://via.placeholder.com/150",
         },
         product: {
           type: mongoose.Schema.Types.ObjectId,
