@@ -15,6 +15,10 @@ const orderSchema = new mongoose.Schema(
         type: String,
         required: [true, "Country is required"],
       },
+      phone: {
+        type: String,
+        required: false,
+      },
     },
     orderItems: [
       {
@@ -74,13 +78,37 @@ const orderSchema = new mongoose.Schema(
     },
     orderStatus: {
       type: String,
-      enum: ["processing", "shipped", "delivered"],
+      enum: ["processing", "shipped", "delivered", "cancelled"],
       default: "processing",
     },
     deliveredAt: Date,
+    notes: {
+      type: String,
+      default: "",
+    },
+    refundStatus: {
+      type: String,
+      enum: ["none", "requested", "processing", "completed", "rejected"],
+      default: "none",
+    },
+    estimatedDeliveryDate: Date,
+    trackingInfo: {
+      carrier: String,
+      trackingNumber: String,
+      trackingUrl: String,
+    },
   },
   { timestamps: true }
 );
+
+// Virtual property for order age in days
+orderSchema.virtual("orderAge").get(function () {
+  return Math.floor((Date.now() - this.createdAt) / (1000 * 60 * 60 * 24));
+});
+
+// Index for faster queries
+orderSchema.index({ user: 1, createdAt: -1 });
+orderSchema.index({ orderStatus: 1 });
 
 export const orderModel = mongoose.model("Orders", orderSchema);
 export default orderModel;

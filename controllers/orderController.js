@@ -14,12 +14,27 @@ export const createOrderController = async (req, res) => {
       tax,
       shippingCharges,
       totalAmount,
+      notes,
     } = req.body;
 
+    // Validate required fields
+    if (!shippingInfo || !orderItems || !paymentMethod) {
+      return res.status(400).send({
+        success: false,
+        message: "Missing required fields for order creation",
+      });
+    }
+
+    // Prepare shipping info with phone if provided
+    const orderShippingInfo = {
+      ...shippingInfo,
+      phone: shippingInfo.phone || "",
+    };
+
     // Create the order
-    await orderModel.create({
+    const newOrder = await orderModel.create({
       user: req.user._id,
-      shippingInfo,
+      shippingInfo: orderShippingInfo,
       orderItems,
       paymentMethod,
       paymentInfo,
@@ -27,6 +42,9 @@ export const createOrderController = async (req, res) => {
       tax,
       shippingCharges,
       totalAmount,
+      notes: notes || "",
+      paidAt: paymentMethod === "ONLINE" && paymentInfo ? new Date() : null,
+      estimatedDeliveryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
     });
 
     // ✅ Update stock safely without fetching full product or saving
@@ -44,6 +62,8 @@ export const createOrderController = async (req, res) => {
     return res.status(201).send({
       success: true,
       message: "Order Created Successfully",
+      order: newOrder,
+      orderId: newOrder._id,
     });
   } catch (error) {
     console.log(error);
@@ -59,27 +79,41 @@ export const createOrderController = async (req, res) => {
 export const getMyOrdersController = async (req, res) => {
   try {
     //FIND ORDERS
-    const orders = await orderModel.find({ user: req.user._id });
+    const orders = await orderModel
+      .find({ user: req.user._id })
+      .sort({ createdAt: -1 }) // Most recent first
+      .populate({
+        path: "orderItems.product",
+        select: "name price images",
+      });
 
     //VALIDATION
-    if (!orders) {
-      return res.status(404).send({
-        success: false,
-        message: "Orders Not Found",
+    if (!orders || orders.length === 0) {
+      return res.status(200).send({
+        success: true,
+        message: "No orders found",
+        totalOrders: 0,
+        orders: [],
       });
     }
+
+    // Add virtual property orderAge
+    const ordersWithDetails = orders.map((order) => {
+      const orderObj = order.toObject({ virtuals: true });
+      return orderObj;
+    });
 
     return res.status(200).send({
       success: true,
       message: "My Orders Fetched Successfully",
       totalOrders: orders.length,
-      orders,
+      orders: ordersWithDetails,
     });
   } catch (error) {
     console.log(error);
     return res.status(500).send({
       success: false,
-      message: `Error in Get My Orders API: ${console.log(error)}`,
+      message: `Error in Get My Orders API: ${error.message}`,
       error,
     });
   }
@@ -129,27 +163,33 @@ export const paymentsController = async (req, res) => {
 
     //VALIDATION
     if (!totalAmount) {
-      return res.status(404).send({
+      return res.status(400).send({
         success: false,
         message: "Total amount is required",
       });
     }
 
-    const { client_secret } = await stripe.paymentIntents.create({
-      amount: Number(totalAmount * 100),
+    // Create a payment intent with Stripe
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Number(totalAmount * 100), // convert to cents
       currency: "usd",
+      metadata: {
+        userId: req.user._id.toString(),
+        integration_check: "accept_a_payment",
+      },
     });
 
     return res.status(200).send({
       success: true,
-      message: "Payment Done Successfully",
-      client_secret,
+      message: "Payment Intent Created Successfully",
+      client_secret: paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id,
     });
   } catch (error) {
     console.log(error);
     return res.status(500).send({
       success: false,
-      message: `Error in Single order Details API: ${console.log(error)}`,
+      message: `Error in Payment Processing API: ${error.message}`,
       error,
     });
   }

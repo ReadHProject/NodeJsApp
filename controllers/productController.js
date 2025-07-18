@@ -245,15 +245,13 @@ export const updateProductController = async (req, res) => {
 
     //UPDATE PRODUCT
     const { name, description, price, category, stock, subcategory } = req.body;
-    console.log("Updating product with subcategory:", subcategory); // Debug log
-
     //VALIDATION AND UPDATE
     if (name) product.name = name;
     if (description) product.description = description;
     if (price) product.price = price;
     if (category) product.category = category;
     if (stock) product.stock = stock;
-    product.subcategory = subcategory || ""; // Always update subcategory field
+    if (subcategory !== undefined) product.subcategory = subcategory;
 
     await product.save();
 
