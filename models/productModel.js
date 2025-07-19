@@ -42,9 +42,9 @@ const ColorSchema = new mongoose.Schema({
   },
   sizes: [
     {
-      size: { type: String, required: true },
-      price: { type: Number, required: false }, // Optional: won't break old records
-      stock: { type: Number, required: false }, // Optional: won't break old records
+      size: { type: String, required: true, default: "" },
+      price: { type: Number, required: false, default: 0 }, // Optional: won't break old records
+      stock: { type: Number, required: false, default: 0 }, // Optional: won't break old records
       //add discount price in percentage or in value
       discountper: {
         type: String,
