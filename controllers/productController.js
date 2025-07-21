@@ -722,10 +722,22 @@ export const deleteProductController = async (req, res) => {
 //CREATE PRODUCT REVIEW AND COMMENT
 export const productReviewController = async (req, res) => {
   try {
+    console.log("Review API called with params:", req.params);
+    console.log("Review request body:", req.body);
+    console.log("User from request:", req.user?._id);
+
     const { comment, rating } = req.body;
+
+    if (!rating) {
+      return res.status(400).json({
+        success: false,
+        message: "Rating is required",
+      });
+    }
 
     //FIND PRODUCT
     const product = await productModel.findById(req.params.id);
+    console.log("Found product:", product ? product._id : "No product found");
 
     //VALIDATION
     if (!product) {
@@ -736,9 +748,15 @@ export const productReviewController = async (req, res) => {
     }
 
     //CHECK PREVIOUS REVIEW
-    const alreadyReviewed = product.reviews.find(
-      (r) => r.user.toSting() === req.user._id.toString()
-    );
+    const alreadyReviewed =
+      product.reviews &&
+      product.reviews.length > 0 &&
+      product.reviews.find(
+        (r) =>
+          r.user && req.user && r.user.toString() === req.user._id.toString()
+      );
+
+    console.log("Already reviewed:", alreadyReviewed ? "Yes" : "No");
 
     //VALIDATION
     if (alreadyReviewed) {
@@ -752,37 +770,48 @@ export const productReviewController = async (req, res) => {
     const review = {
       name: req.user.name,
       rating: Number(rating),
-      comment,
+      comment: comment || "",
       user: req.user._id,
     };
 
+    console.log("Creating review:", review);
+
     //PASSING REVIEW OBJECT TO REVIEW ARRAY
+    if (!product.reviews) {
+      product.reviews = [];
+    }
     product.reviews.push(review);
+
     //NO. OF REVIEWS
     product.numReviews = product.reviews.length;
+
+    //CALCULATE AVERAGE RATING
     product.rating =
-      product.reviews.reduce((acc, item) => item.rating + acc, 0) /
+      product.reviews.reduce((acc, item) => (item.rating || 0) + acc, 0) /
       product.reviews.length;
 
     //SAVE
     await product.save();
+    console.log("Product saved with review");
+
     return res.status(200).json({
       success: true,
       message: "Product Reviewed Successfully",
       product,
     });
   } catch (error) {
-    console.log(error);
+    console.log("Review controller error:", error);
     //Cast Error || Object Id
     if (error.name === "CastError") {
       return res.status(500).json({
         success: false,
         message: `Invalid Id`,
+        error,
       });
     }
     return res.status(500).json({
       success: false,
-      message: `Error in Create Product API: ${console.log(error)}`,
+      message: `Error in Review API: ${error.message}`,
       error,
     });
   }

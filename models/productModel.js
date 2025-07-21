@@ -133,3 +133,37 @@ const productSchema = new mongoose.Schema(
 
 export const productModel = mongoose.model("Products", productSchema);
 export default productModel;
+
+// {
+//   "_id": <Number>, // Mapped from DummyJSON 'id'
+//   "title": "String",
+//   "description": "String",
+//   "category": "String",
+//   "price": "Double",
+//   "discountPercentage": "Double",
+//   "rating": "Double",
+//   "stock": "Int",
+//   "tags":, // Array of strings
+//   "brand": "String",
+//   "sku": "String",
+//   "weight": "Int",
+//   "dimensions": {
+//     "width": "Double",
+//     "height": "Double",
+//     "depth": "Double"
+//   },
+//   "warrantyInformation": "String",
+//   "shippingInformation": "String",
+//   "availabilityStatus": "String",
+//   "reviews":,
+//   "returnPolicy": "String",
+//   "minimumOrderQuantity": "Int",
+//   "meta": { // Embedded document for metadata
+//     "createdAt": "Date", // Stored as ISODate
+//     "updatedAt": "Date", // Stored as ISODate
+//     "barcode": "String",
+//     "qrCode": "String"
+//   },
+//   "thumbnail": "String", // URL
+//   "images": // Array of URLs
+// }
