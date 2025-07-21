@@ -109,6 +109,7 @@ import categoryRoutes from "./routes/categoryRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import cartRoutes from "./routes/cartRoutes.js";
 import wishlistRoutes from "./routes/wishlistRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
 
 // app.use is use to Run middleware functions for every request or specific routes.
 app.use("/api/v1", testRoutes);
@@ -118,6 +119,7 @@ app.use("/api/v1/category", categoryRoutes);
 app.use("/api/v1/order", orderRoutes);
 app.use("/api/v1/cart", cartRoutes);
 app.use("/api/v1/wishlist", wishlistRoutes);
+app.use("/api/v1/admin", adminRoutes);
 
 app.get("/", (req, res) => {
   return res.status(200).send("<h1>Weclome to Node Server Ecom APP</h1>");

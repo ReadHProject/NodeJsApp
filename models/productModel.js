@@ -88,6 +88,30 @@ const productSchema = new mongoose.Schema(
       type: Number,
       required: [true, "Product stock is required"],
     },
+    sku: {
+      type: String,
+      default: "",
+    },
+    warrantyInformation: {
+      type: String,
+      default: "",
+    },
+    shippingInformation: {
+      type: String,
+      default: "",
+    },
+    availabilityStatus: {
+      type: String,
+      default: "",
+    },
+    returnPolicy: {
+      type: String,
+      default: "",
+    },
+    minimumOrderQuantity: {
+      type: Number,
+      default: 1,
+    },
     // quantity: {
     //   type: Number,
     //   required: [true, "Product quantity is required"],
