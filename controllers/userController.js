@@ -583,3 +583,121 @@ export const updateSavedAddressesController = async (req, res) => {
     });
   }
 };
+
+//BLOCK/UNBLOCK USER - ADMIN
+export const blockUserController = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { blocked } = req.body;
+
+    const user = await userModel.findById(userId);
+
+    if (!user) {
+      return res.status(404).send({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Update block status
+    user.blocked = blocked;
+    await user.save();
+
+    res.status(200).send({
+      success: true,
+      message: `User ${blocked ? "blocked" : "unblocked"} successfully`,
+      user,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
+      success: false,
+      message: "Error in blockUser API",
+      error,
+    });
+  }
+};
+
+//DELETE USER - ADMIN
+export const deleteUserController = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await userModel.findById(userId);
+
+    if (!user) {
+      return res.status(404).send({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    await userModel.findByIdAndDelete(userId);
+
+    res.status(200).send({
+      success: true,
+      message: "User deleted successfully",
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
+      success: false,
+      message: "Error in deleteUser API",
+      error,
+    });
+  }
+};
+
+//UPDATE USER ROLE - ADMIN
+export const updateUserRoleController = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { role } = req.body;
+
+    const user = await userModel.findById(userId);
+
+    if (!user) {
+      return res.status(404).send({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Update role
+    user.role = role;
+    await user.save();
+
+    res.status(200).send({
+      success: true,
+      message: "User role updated successfully",
+      user,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
+      success: false,
+      message: "Error in updateUserRole API",
+      error,
+    });
+  }
+};
+
+//GET USER PROFILE
+export const getProfileController = async (req, res) => {
+  try {
+    const user = await userModel.findById(req.user._id);
+    user.password = undefined;
+    return res.status(200).send({
+      success: true,
+      message: "User Profile Fetched Successfully",
+      user,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
+      success: false,
+      message: "Error in Get User Profile API",
+      error,
+    });
+  }
+};

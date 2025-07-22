@@ -12,6 +12,10 @@ import {
   updateProfilePicController,
   updateSavedAddressesController,
   verifyOtpController,
+  blockUserController,
+  deleteUserController,
+  updateUserRoleController,
+  getProfileController,
 } from "../controllers/userController.js";
 import { isAdmin, isAuth } from "../middlewares/authMiddleware.js";
 import { profileUpload, singleUpload } from "../middlewares/multer.js";
@@ -70,6 +74,21 @@ router.post("/request-otp", passwordResetOtpController);
 
 //VERIFY OTP
 router.post("/verify-otp", verifyOtpController);
+
+// USER MANAGEMENT ROUTES - ADMIN
+// BLOCK/UNBLOCK USER
+router.put("/admin/users/:userId/block", isAuth, isAdmin, blockUserController);
+
+// DELETE USER
+router.delete("/admin/users/:userId", isAuth, isAdmin, deleteUserController);
+
+// UPDATE USER ROLE
+router.put(
+  "/admin/users/:userId/role",
+  isAuth,
+  isAdmin,
+  updateUserRoleController
+);
 
 //EXPORT
 export default router;

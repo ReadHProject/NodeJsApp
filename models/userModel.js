@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import JWT from "jsonwebtoken";
 
+// Schema
 const userSchema = new mongoose.Schema(
   {
     name: {
@@ -11,7 +12,7 @@ const userSchema = new mongoose.Schema(
     email: {
       type: String,
       required: [true, "email is required"],
-      unique: [true, "email already taken"],
+      unique: true,
     },
     password: {
       type: String,
@@ -24,7 +25,7 @@ const userSchema = new mongoose.Schema(
     },
     city: {
       type: String,
-      required: [true, "city name is required"],
+      required: [true, "city is required"],
     },
     country: {
       type: String,
@@ -35,7 +36,7 @@ const userSchema = new mongoose.Schema(
     },
     phone: {
       type: String,
-      required: [true, "phone no. is required"],
+      required: [true, "phone is required"],
     },
     profilePic: {
       public_id: {
@@ -64,6 +65,14 @@ const userSchema = new mongoose.Schema(
     resetPasswordOtpExpires: {
       type: Date,
     },
+    blocked: {
+      type: Boolean,
+      default: false,
+    },
+    lastLogin: {
+      type: Date,
+      default: Date.now,
+    },
   },
   { timestamps: true }
 );
@@ -89,7 +98,14 @@ const userSchema = new mongoose.Schema(
 
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
-  this.password = await bcrypt.hash(this.password, 10);
+
+  try {
+    this.password = await bcrypt.hash(this.password, 10);
+    next();
+  } catch (error) {
+    console.log(error);
+    next(error);
+  }
 });
 
 //Compare function
@@ -106,7 +122,12 @@ userSchema.pre("save", async function (next) {
 // It returns true if passwords match, otherwise false.
 
 userSchema.methods.comparePassword = async function (plainPassword) {
-  return await bcrypt.compare(plainPassword, this.password);
+  try {
+    return bcrypt.compare(plainPassword, this.password);
+  } catch (error) {
+    console.log(error);
+    return false;
+  }
 };
 
 //JWT Token
@@ -128,10 +149,13 @@ userSchema.methods.comparePassword = async function (plainPassword) {
 // This function is used to create a login token (JWT) for a user, which includes their _id and expires after 7 days. You can use this token to keep the user logged in securely.
 
 userSchema.methods.generateToken = function () {
-  return JWT.sign({ _id: this._id }, process.env.JWT_SECRET, {
-    expiresIn: "7d",
-    // expiresIn: "5m",
-  });
+  try {
+    return JWT.sign({ _id: this._id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+  } catch (error) {
+    console.log(error);
+  }
 };
 
 export const userModel = mongoose.model("Users", userSchema);
