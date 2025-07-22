@@ -82,6 +82,7 @@ app.use(
       const whitelist = [
         "http://localhost:8081",
         "http://localhost:8080",
+        "http://localhost:8082",
         "https://nodejsapp-hfpl.onrender.com", // Add your actual frontend here
         "https://8082-firebase-rnecommerceappgit-1752092415589.cluster-ancjwrkgr5dvux4qug5rbzyc2y.cloudworkstations.dev",
       ];
