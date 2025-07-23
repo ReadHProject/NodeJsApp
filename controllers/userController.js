@@ -189,11 +189,20 @@ export const getAllUsersController = async (req, res) => {
   try {
     const users = await userModel.find().select("-password"); // Exclude passwords
 
+    // Manually ensure the 'blocked' field is present
+    const usersWithBlocked = users.map(user => {
+      const userObject = user.toObject();
+      if (userObject.blocked === undefined) {
+        userObject.blocked = 'false'; // or false, depending on your default
+      }
+      return userObject;
+    });
+
     return res.status(200).send({
       success: true,
       message: "All Users Fetched Successfully",
       totalUsers: users.length,
-      users,
+      users: usersWithBlocked,
     });
   } catch (error) {
     console.log(error);
