@@ -59,12 +59,6 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "user",
     },
-    resetPasswordOtp: {
-      type: String,
-    },
-    resetPasswordOtpExpires: {
-      type: Date,
-    },
     blocked: {
       type: String,
       default: "false",
@@ -76,6 +70,12 @@ const userSchema = new mongoose.Schema(
     lastLogin: {
       type: Date,
       default: Date.now,
+    },
+    resetPasswordOtp: {
+      type: String,
+    },
+    resetPasswordOtpExpires: {
+      type: Date,
     },
   },
   { timestamps: true }
