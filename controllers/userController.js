@@ -26,7 +26,7 @@ export const registerController = async (req, res) => {
       !country ||
       !answer
     ) {
-      return res.status(500).send({
+      return res.status(500).json({
         success: false,
         message: "Please provide all fields",
       });
@@ -37,7 +37,7 @@ export const registerController = async (req, res) => {
 
     //VALIDATION
     if (existingUser) {
-      return res.status(500).send({
+      return res.status(500).json({
         success: false,
         message: "email already taken",
       });
@@ -54,14 +54,14 @@ export const registerController = async (req, res) => {
       answer,
     });
 
-    return res.status(201).send({
+    return res.status(201).json({
       success: true,
       message: "Registration success, please login",
       user,
     });
   } catch (error) {
     console.log(error);
-    return res.status(500).send({
+    return res.status(500).json({
       success: false,
       message: `Error in register API: ${console.log(error)}`,
       error,
