@@ -1,4 +1,5 @@
 import productModel from "../models/productModel.js";
+import categoryModel from "../models/categoryModel.js";
 import cloudinary from "cloudinary";
 import { getDataUri } from "../utils/feature.js";
 import path from "path";
@@ -176,6 +177,14 @@ export const createProductController = async (req, res) => {
       });
     }
 
+    const categoryDoc = await categoryModel.findById(category);
+    if (!categoryDoc) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Category not found" });
+    }
+    const isClothing = categoryDoc.category.toLowerCase() === "clothing";
+
     const parsedColors = JSON.parse(colors || "[]");
     const uploadedFiles = req.files || [];
 
@@ -190,9 +199,9 @@ export const createProductController = async (req, res) => {
         );
       }
 
-      if (!color.sizes || color.sizes.length < 1) {
+      if (isClothing && (!color.sizes || color.sizes.length < 1)) {
         throw new Error(
-          `Color ${color.colorName} must have at least one size with price and stock`
+          `For clothing, color ${color.colorName} must have at least one size with price and stock`
         );
       }
 
@@ -203,7 +212,7 @@ export const createProductController = async (req, res) => {
         colorName: color.colorName,
         colorCode: color.colorCode,
         images,
-        sizes: color.sizes, // 👈 correct sizes array from frontend
+        sizes: isClothing ? color.sizes : [],
       };
     });
 
