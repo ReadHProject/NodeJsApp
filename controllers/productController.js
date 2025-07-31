@@ -151,8 +151,23 @@ export const getSingleProductController = async (req, res) => {
 
 export const createProductController = async (req, res) => {
   try {
-    const { name, description, price, stock, category, subcategory, colors } =
-      req.body;
+    const {
+      name,
+      description,
+      price,
+      stock,
+      category,
+      subcategory,
+      colors,
+      isFeatured,
+      isTrending,
+      isPopular,
+      tags,
+      brand,
+      shippingInformation,
+      returnPolicy,
+      warranty,
+    } = req.body;
 
     if (!name || !description || !price || !stock || !category || !colors) {
       return res.status(400).json({
@@ -210,9 +225,17 @@ export const createProductController = async (req, res) => {
       price,
       stock,
       category,
-      subcategory: subcategory || "", // Add subcategory field with default empty string
+      subcategory: subcategory || "",
       images: generalImage,
       colors: colorImages,
+      isFeatured: isFeatured === "true",
+      isTrending: isTrending === "true",
+      isPopular: isPopular === "true",
+      tags: tags ? tags.split(",").map((tag) => tag.trim()) : [],
+      brand,
+      shippingInformation,
+      returnPolicy,
+      warranty,
     });
 
     return res.status(201).json({
@@ -244,7 +267,22 @@ export const updateProductController = async (req, res) => {
     }
 
     //UPDATE PRODUCT
-    const { name, description, price, category, stock, subcategory } = req.body;
+    const {
+      name,
+      description,
+      price,
+      category,
+      stock,
+      subcategory,
+      isFeatured,
+      isTrending,
+      isPopular,
+      tags,
+      brand,
+      shippingInformation,
+      returnPolicy,
+      warranty,
+    } = req.body;
     //VALIDATION AND UPDATE
     if (name) product.name = name;
     if (description) product.description = description;
@@ -252,6 +290,17 @@ export const updateProductController = async (req, res) => {
     if (category) product.category = category;
     if (stock) product.stock = stock;
     if (subcategory !== undefined) product.subcategory = subcategory;
+    if (isFeatured !== undefined) product.isFeatured = isFeatured;
+    if (isTrending !== undefined) product.isTrending = isTrending;
+    if (isPopular !== undefined) product.isPopular = isPopular;
+    if (tags)
+      product.tags = Array.isArray(tags)
+        ? tags
+        : tags.split(",").map((tag) => tag.trim());
+    if (brand) product.brand = brand;
+    if (shippingInformation) product.shippingInformation = shippingInformation;
+    if (returnPolicy) product.returnPolicy = returnPolicy;
+    if (warranty) product.warranty = warranty;
 
     await product.save();
 
