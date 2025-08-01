@@ -168,6 +168,9 @@ export const createProductController = async (req, res) => {
       shippingInformation,
       returnPolicy,
       warranty,
+      sku,
+      availabilityStatus,
+      minimumOrderQuantity,
     } = req.body;
 
     if (!name || !description || !price || !stock || !category || !colors) {
@@ -245,6 +248,10 @@ export const createProductController = async (req, res) => {
       shippingInformation,
       returnPolicy,
       warranty,
+      sku,
+      availabilityStatus,
+      minimumOrderQuantity,
+      categoryName: categoryDoc.category,
     });
 
     return res.status(201).json({
@@ -291,7 +298,21 @@ export const updateProductController = async (req, res) => {
       shippingInformation,
       returnPolicy,
       warranty,
+      sku,
+      availabilityStatus,
+      minimumOrderQuantity,
     } = req.body;
+
+    const categoryDoc = await categoryModel.findById(category);
+    if (!categoryDoc) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Category not found" });
+    }
+    const categoryName = categoryDoc.category?.toLowerCase() || "";
+    const isClothing =
+      categoryName === "clothes" || categoryName === "clothing";
+
     //VALIDATION AND UPDATE
     if (name) product.name = name;
     if (description) product.description = description;
@@ -310,6 +331,19 @@ export const updateProductController = async (req, res) => {
     if (shippingInformation) product.shippingInformation = shippingInformation;
     if (returnPolicy) product.returnPolicy = returnPolicy;
     if (warranty) product.warranty = warranty;
+    if (sku) product.sku = sku;
+    if (availabilityStatus) product.availabilityStatus = availabilityStatus;
+    if (minimumOrderQuantity)
+      product.minimumOrderQuantity = minimumOrderQuantity;
+
+    // SET categoryName for validation logic
+    product.categoryName = categoryName;
+
+    if (!isClothing) {
+      product.colors.forEach((color) => {
+        color.sizes = [];
+      });
+    }
 
     await product.save();
 

@@ -141,14 +141,21 @@ const productSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+
+    // TEMP FIELD FOR VALIDATION PURPOSE ONLY
+    categoryName: { type: String, default: "" },
+
     colors: {
       type: [ColorSchema],
       validate: {
-        validator: function (arr) {
-          // You could enforce at least one color
-          return arr.length > 0;
+        validator: function (value) {
+          // Only require colors if categoryName is "clothes"
+          if (this.categoryName?.toLowerCase() === "clothes") {
+            return Array.isArray(value) && value.length > 0;
+          }
+          return true; // No validation needed for non-clothes
         },
-        message: "A product must have at least one color option.",
+        message: "Products in 'Clothes' category must have at least one color.",
       },
     },
   },
