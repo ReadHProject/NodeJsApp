@@ -330,7 +330,7 @@ export const updateProductController = async (req, res) => {
     if (brand) product.brand = brand;
     if (shippingInformation) product.shippingInformation = shippingInformation;
     if (returnPolicy) product.returnPolicy = returnPolicy;
-    if (warranty) product.warranty = warranty;
+    if (warranty) product.warrantyInformation = warranty;
     if (sku) product.sku = sku;
     if (availabilityStatus) product.availabilityStatus = availabilityStatus;
     if (minimumOrderQuantity)
