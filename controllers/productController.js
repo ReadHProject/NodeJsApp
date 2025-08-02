@@ -186,8 +186,17 @@ export const createProductController = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Category not found" });
     }
-    const clothingCategories = ['clothing', 'clothes', 'shoes', 'accessories', 'fashion', 'apparel'];
-    const isClothing = clothingCategories.includes(categoryDoc.category.toLowerCase());
+    const clothingCategories = [
+      "clothing",
+      "clothes",
+      "shoes",
+      "accessories",
+      "fashion",
+      "apparel",
+    ];
+    const isClothing = clothingCategories.includes(
+      categoryDoc.category.toLowerCase()
+    );
 
     const parsedColors = JSON.parse(colors || "[]");
     const uploadedFiles = req.files || [];
@@ -248,7 +257,7 @@ export const createProductController = async (req, res) => {
       brand,
       shippingInformation,
       returnPolicy,
-      warranty,
+      warrantyInformation: warranty,
       sku,
       availabilityStatus,
       minimumOrderQuantity,
@@ -311,7 +320,14 @@ export const updateProductController = async (req, res) => {
         .json({ success: false, message: "Category not found" });
     }
     const categoryName = categoryDoc.category?.toLowerCase() || "";
-    const clothingCategories = ['clothing', 'clothes', 'shoes', 'accessories', 'fashion', 'apparel'];
+    const clothingCategories = [
+      "clothing",
+      "clothes",
+      "shoes",
+      "accessories",
+      "fashion",
+      "apparel",
+    ];
     const isClothing = clothingCategories.includes(categoryName);
 
     //VALIDATION AND UPDATE
