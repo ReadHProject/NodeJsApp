@@ -5,7 +5,7 @@ import productModel from "../models/productModel.js";
 export const createCategoryController = async (req, res) => {
   try {
     //GET CATEGORY
-    const { category, subcategories = [] } = req.body;
+    const { category, subcategories = [], categoryType, supportsColorVariants, supportsSizeVariants, description, icon, isActive, displayOrder } = req.body;
 
     //VALIDATION
     if (!category) {
@@ -15,8 +15,26 @@ export const createCategoryController = async (req, res) => {
       });
     }
 
+    // Process subcategories to ensure proper structure
+    const processedSubcategories = subcategories.map(subcat => {
+      if (typeof subcat === 'string') {
+        // Convert old string format to new object format
+        return {
+          name: subcat,
+          subSubCategories: []
+        };
+      } else if (subcat && typeof subcat === 'object') {
+        // Ensure proper structure for object format
+        return {
+          name: subcat.name,
+          subSubCategories: subcat.subSubCategories || []
+        };
+      }
+      return subcat;
+    });
+
     //CREATE CATEGORY
-    await categoryModel.create({ category, subcategories });
+    await categoryModel.create({ category, subcategories: processedSubcategories, categoryType, supportsColorVariants, supportsSizeVariants, description, icon, isActive, displayOrder });
 
     return res.status(200).json({
       success: true,
@@ -26,7 +44,7 @@ export const createCategoryController = async (req, res) => {
     console.log(error);
     return res.status(500).json({
       success: false,
-      message: `Error in Create Category API: ${console.log(error)}`,
+      message: `Error in Create Category API: ${error.message}`,
       error,
     });
   }
@@ -46,7 +64,7 @@ export const getAllCategoryController = async (req, res) => {
     console.log(error);
     return res.status(500).json({
       success: false,
-      message: `Error in Get All Category API: ${console.log(error)}`,
+      message: `Error in Get All Category API: ${error.message}`,
       error,
     });
   }
@@ -94,7 +112,7 @@ export const deleteCategoryController = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: `Error in Delete Category API: ${console.log(error)}`,
+      message: `Error in Delete Category API: ${error.message}`,
       error,
     });
   }
@@ -114,7 +132,7 @@ export const updateCategoryController = async (req, res) => {
     }
 
     //GET NEW CATEGORY
-    const { updateCategory, subcategories } = req.body;
+    const { updateCategory, subcategories, categoryType, supportsColorVariants, supportsSizeVariants, description, icon, isActive, displayOrder } = req.body;
     console.log("Update Category Request Body:", req.body);
 
     //FIND PRODUCT WITH THIS CATEGORY ID
@@ -129,11 +147,33 @@ export const updateCategoryController = async (req, res) => {
 
     //UPDATE CATEGORY
     if (updateCategory) category.category = updateCategory;
-
-    // Update subcategories if provided
     if (subcategories !== undefined) {
-      category.subcategories = subcategories;
+      // Process subcategories to ensure proper structure
+      const processedSubcategories = subcategories.map(subcat => {
+        if (typeof subcat === 'string') {
+          // Convert old string format to new object format
+          return {
+            name: subcat,
+            subSubCategories: []
+          };
+        } else if (subcat && typeof subcat === 'object') {
+          // Ensure proper structure for object format
+          return {
+            name: subcat.name,
+            subSubCategories: subcat.subSubCategories || []
+          };
+        }
+        return subcat;
+      });
+      category.subcategories = processedSubcategories;
     }
+    if (categoryType) category.categoryType = categoryType;
+    if (supportsColorVariants !== undefined) category.supportsColorVariants = supportsColorVariants;
+    if (supportsSizeVariants !== undefined) category.supportsSizeVariants = supportsSizeVariants;
+    if (description) category.description = description;
+    if (icon) category.icon = icon;
+    if (isActive !== undefined) category.isActive = isActive;
+    if (displayOrder) category.displayOrder = displayOrder;
 
     //SAVE CATEGORY
     await category.save();
@@ -155,7 +195,7 @@ export const updateCategoryController = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: `Error in Update Category API: ${console.log(error)}`,
+      message: `Error in Update Category API: ${error.message}`,
       error,
     });
   }
