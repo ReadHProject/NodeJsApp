@@ -128,6 +128,22 @@ const productSchema = new mongoose.Schema(
       {
         public_id: String,
         url: String,
+        // Enhanced hybrid storage fields (backward compatible)
+        localPath: { type: String, default: null },
+        cloudinaryUrl: { type: String, default: null },
+        filename: { type: String, default: null },
+        originalName: { type: String, default: null },
+        uploadedAt: { type: Date, default: Date.now },
+        isCloudinaryUploaded: { type: Boolean, default: false },
+        storageType: { type: String, enum: ['local', 'cloudinary', 'hybrid', 'legacy'], default: 'local' },
+        cloudinaryUploadedAt: { type: Date, default: null },
+        metadata: {
+          size: Number,
+          mimetype: String,
+          productId: String,
+          colorId: String,
+          index: Number
+        }
       },
     ],
     reviews: {

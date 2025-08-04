@@ -6,6 +6,8 @@ import path from "path";
 import fs from "fs";
 import { v4 as uuidv4 } from "uuid";
 import { fileURLToPath } from "url";
+import hybridImageService from "../services/hybridImageService.js";
+import imageRetrievalService from "../services/imageRetrievalService.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -201,45 +203,90 @@ export const createProductController = async (req, res) => {
     const parsedColors = JSON.parse(colors || "[]");
     const uploadedFiles = req.files || [];
 
-    const colorImages = parsedColors.map((color) => {
-      const matchedFiles = uploadedFiles.filter(
-        (f) => f.fieldname === color.colorId
-      );
+    console.log(`🔄 Processing ${uploadedFiles.length} uploaded files with hybrid storage...`);
 
-      if (matchedFiles.length < 1) {
-        throw new Error(
-          `Color ${color.colorName} must have at least 1 uploaded image`
+    // Process color images with hybrid storage
+    const colorImages = await Promise.all(
+      parsedColors.map(async (color) => {
+        const matchedFiles = uploadedFiles.filter(
+          (f) => f.fieldname === color.colorId
         );
-      }
 
-      if (isClothing && (!color.sizes || color.sizes.length < 1)) {
-        throw new Error(
-          `For clothing, color ${color.colorName} must have at least one size with price and stock`
+        if (matchedFiles.length < 1) {
+          throw new Error(
+            `Color ${color.colorName} must have at least 1 uploaded image`
+          );
+        }
+
+        if (isClothing && (!color.sizes || color.sizes.length < 1)) {
+          throw new Error(
+            `For clothing, color ${color.colorName} must have at least one size with price and stock`
+          );
+        }
+
+        // Process matched files with hybrid storage
+        const hybridImages = await hybridImageService.processMultipleHybridUploads(
+          matchedFiles,
+          {
+            productCategory: category,
+            colorId: color.colorId,
+            colorName: color.colorName
+          }
         );
-      }
 
-      const images = matchedFiles.map((f) => `/uploads/products/${f.filename}`);
+        // For color images, we maintain backward compatibility with string array
+        const images = hybridImages.map(img => img.localPath);
+        
+        // Store hybrid data for future enhancement (can be used later)
+        const imageMetadata = hybridImages.map(img => ({
+          localPath: img.localPath,
+          filename: img.filename,
+          originalName: img.originalName,
+          uploadedAt: img.uploadedAt,
+          storageType: img.storageType
+        }));
 
-      return {
-        colorId: color.colorId,
-        colorName: color.colorName,
-        colorCode: color.colorCode,
-        images,
-        sizes: isClothing ? color.sizes : [],
-      };
-    });
+        return {
+          colorId: color.colorId,
+          colorName: color.colorName,
+          colorCode: color.colorCode,
+          images, // Keep as string array for now (backward compatible)
+          sizes: isClothing ? color.sizes : [],
+          // Store metadata for future use
+          _imageMetadata: imageMetadata
+        };
+      })
+    );
 
-    const generalFile = uploadedFiles.find(
+    // Process general images with hybrid storage
+    const generalFiles = uploadedFiles.filter(
       (f) => f.fieldname === "generalImage"
     );
-    const generalImage = generalFile
-      ? [
-          {
-            public_id: generalFile.filename,
-            url: `/uploads/products/${generalFile.filename}`,
-          },
-        ]
-      : [];
+    
+    let generalImages = [];
+    if (generalFiles.length > 0) {
+      const hybridGeneralImages = await hybridImageService.processMultipleHybridUploads(
+        generalFiles,
+        {
+          productCategory: category,
+          type: 'general'
+        }
+      );
+
+      // Create enhanced image objects with hybrid storage
+      generalImages = hybridGeneralImages.map(img => ({
+        public_id: img.public_id,
+        url: img.url,
+        localPath: img.localPath,
+        cloudinaryUrl: img.cloudinaryUrl,
+        filename: img.filename,
+        originalName: img.originalName,
+        uploadedAt: img.uploadedAt,
+        isCloudinaryUploaded: img.isCloudinaryUploaded,
+        storageType: img.storageType,
+        metadata: img.metadata
+      }));
+    }
 
     const product = await productModel.create({
       name,
@@ -248,7 +295,7 @@ export const createProductController = async (req, res) => {
       stock,
       category,
       subcategory: subcategory || "",
-      images: generalImage,
+      images: generalImages,
       colors: colorImages,
       isFeatured: isFeatured === "true",
       isTrending: isTrending === "true",
