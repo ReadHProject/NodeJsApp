@@ -347,6 +347,7 @@ export const updateProductController = async (req, res) => {
       category,
       stock,
       subcategory,
+      subSubcategory,
       isFeatured,
       isTrending,
       isPopular,
@@ -377,6 +378,30 @@ export const updateProductController = async (req, res) => {
     ];
     const isClothing = clothingCategories.includes(categoryName);
 
+    // Add subcategory if it doesn't exist
+    if (subcategory) {
+      const existingSubcategory = categoryDoc.subcategories.find(subcat => subcat.name === subcategory);
+      if (!existingSubcategory) {
+        categoryDoc.subcategories.push({ name: subcategory, subSubCategories: [] });
+        await categoryDoc.save();
+      }
+
+      // Add sub-subcategory if it doesn't exist
+      if (subcategory && subSubcategory) {
+        const subcatIndex = categoryDoc.subcategories.findIndex((subcat) => subcat.name === subcategory);
+        if (subcatIndex !== -1) {
+          const existingSubSubcategory = categoryDoc.subcategories[subcatIndex].subSubCategories.find(subSubcat => {
+            const name = typeof subSubcat === 'string' ? subSubcat : subSubcat.name;
+            return name === subSubcategory;
+          });
+          if (!existingSubSubcategory) {
+            categoryDoc.subcategories[subcatIndex].subSubCategories.push({ name: subSubcategory });
+            await categoryDoc.save();
+          }
+        }
+      }
+    }
+
     //VALIDATION AND UPDATE
     if (name) product.name = name;
     if (description) product.description = description;
@@ -384,6 +409,7 @@ export const updateProductController = async (req, res) => {
     if (category) product.category = category;
     if (stock) product.stock = stock;
     if (subcategory !== undefined) product.subcategory = subcategory;
+    if (subSubcategory !== undefined) product.subSubcategory = subSubcategory;
     if (isFeatured !== undefined) product.isFeatured = isFeatured;
     if (isTrending !== undefined) product.isTrending = isTrending;
     if (isPopular !== undefined) product.isPopular = isPopular;
