@@ -124,6 +124,10 @@ const productSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    subSubcategory: {
+      type: String,
+      default: "",
+    },
     images: [
       {
         public_id: String,
