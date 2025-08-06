@@ -527,8 +527,12 @@ export const updateProductImageController = async (req, res) => {
       (f) => f.fieldname === "generalImage"
     );
     if (generalFile) {
+      // Get category information for folder structure
+      const categoryDoc = await categoryModel.findById(product.category);
+      const categoryName = categoryDoc ? categoryDoc.category : (product.categoryName || 'general');
+      
       // Upload to Cloudinary
-      const folder = `ecommerce/products/${product.categoryName}/general`;
+      const folder = `ecommerce/products/${categoryName}/general`;
       const cloudinaryResult = await uploadFileToCloudinary(generalFile, {
         folder,
         public_id: `general_${Date.now()}`,
@@ -566,8 +570,12 @@ export const updateProductImageController = async (req, res) => {
         let updatedImages = existing ? [...existing.images] : [];
 
         if (matchedFiles.length > 0) {
+          // Get category information for folder structure
+          const categoryDoc = await categoryModel.findById(product.category);
+          const categoryName = categoryDoc ? categoryDoc.category : (product.categoryName || 'general');
+          
           // Upload new color images to Cloudinary
-          const folder = `ecommerce/products/${product.categoryName}/${incomingColor.colorName}`;
+          const folder = `ecommerce/products/${categoryName}/${incomingColor.colorName}`;
           const cloudinaryResults =
             await uploadMultipleToCloudinaryWithProgress(matchedFiles, {
               folder,
@@ -638,7 +646,15 @@ export const updateProductImageController = async (req, res) => {
       product,
     });
   } catch (error) {
-    console.log(error);
+    console.error("❌ Error in updateProductImageController:", {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      productId: req.params.id,
+      bodyKeys: Object.keys(req.body),
+      filesCount: req.files ? req.files.length : 0
+    });
+    
     if (error.name === "CastError") {
       return res
         .status(400)
@@ -646,7 +662,12 @@ export const updateProductImageController = async (req, res) => {
     }
     return res
       .status(500)
-      .json({ success: false, message: "Server Error", error });
+      .json({ 
+        success: false, 
+        message: "Server Error", 
+        error: error.message,
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      });
   }
 };
 
