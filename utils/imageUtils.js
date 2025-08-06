@@ -36,12 +36,11 @@ export const uploadFileToCloudinary = async (file, options = {}) => {
     const uploadOptions = {
       folder: options.folder || "ecommerce/products",
       resource_type: "image",
-      format: options.format || "auto",
       quality: options.quality || "auto:good",
+      fetch_format: "auto",
       transformation: options.transformation || [
         { width: 1200, height: 1200, crop: "limit" },
-        { quality: "auto:good" },
-        { fetch_format: "auto" }
+        { quality: "auto:good" }
       ],
       ...options
     };

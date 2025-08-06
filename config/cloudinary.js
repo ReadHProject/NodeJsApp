@@ -21,8 +21,8 @@ export const uploadToCloudinary = async (filePath, options = {}) => {
     const uploadOptions = {
       folder: options.folder || "ecommerce/products",
       resource_type: "image",
-      format: options.format || "auto",
-      quality: options.quality || "auto",
+      quality: options.quality || "auto:good",
+      fetch_format: "auto",
       transformation: options.transformation || [],
       ...options,
     };
