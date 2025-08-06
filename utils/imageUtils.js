@@ -19,7 +19,18 @@ const __dirname = path.dirname(__filename);
  */
 export const uploadFileToCloudinary = async (file, options = {}) => {
   try {
+    console.log('🔄 Uploading file to Cloudinary:', {
+      fieldname: file.fieldname,
+      originalname: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size,
+      hasBuffer: !!file.buffer,
+      hasPath: !!file.path,
+      path: file.path
+    });
+    
     const fileDataUri = getDataUri(file);
+    console.log('✅ Successfully generated data URI for file:', file.originalname);
     
     // Default options
     const uploadOptions = {
@@ -35,11 +46,33 @@ export const uploadFileToCloudinary = async (file, options = {}) => {
       ...options
     };
     
+    console.log('🚀 Starting Cloudinary upload with options:', uploadOptions);
+    
     // Upload to Cloudinary
     const result = await uploadToCloudinary(fileDataUri.content, uploadOptions);
+    
+    if (result.success) {
+      console.log('✅ Cloudinary upload successful:', {
+        public_id: result.data.public_id,
+        url: result.data.url,
+        size: result.data.bytes
+      });
+    } else {
+      console.error('❌ Cloudinary upload failed:', result.error);
+    }
+    
     return result;
   } catch (error) {
-    console.error("Error uploading to Cloudinary:", error);
+    console.error("❌ Error uploading to Cloudinary:", {
+      message: error.message,
+      stack: error.stack,
+      fileInfo: {
+        fieldname: file?.fieldname,
+        originalname: file?.originalname,
+        hasBuffer: !!file?.buffer,
+        hasPath: !!file?.path
+      }
+    });
     return {
       success: false,
       error: error.message
