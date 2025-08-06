@@ -6,8 +6,20 @@ import path from "path";
 import fs from "fs";
 import { v4 as uuidv4 } from "uuid";
 import { fileURLToPath } from "url";
-import hybridImageService from "../services/hybridImageService.js";
-import imageRetrievalService from "../services/imageRetrievalService.js";
+import {
+  uploadFileToCloudinary,
+  uploadMultipleToCloudinaryWithProgress,
+  formatCloudinaryResultsForDB,
+  extractUrlsFromCloudinaryResults,
+  generateProductImageFolder,
+  cleanupLocalFile,
+  deleteImagesFromCloudinary,
+} from "../utils/imageUtils.js";
+import {
+  uploadToCloudinary,
+  uploadMultipleToCloudinary,
+  deleteFromCloudinary,
+} from "../config/cloudinary.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -204,9 +216,11 @@ export const createProductController = async (req, res) => {
     const parsedColors = JSON.parse(colors || "[]");
     const uploadedFiles = req.files || [];
 
-    console.log(`🔄 Processing ${uploadedFiles.length} uploaded files with hybrid storage...`);
+    console.log(
+      `🔄 Processing ${uploadedFiles.length} uploaded files with Cloudinary...`
+    );
 
-    // Process color images with hybrid storage
+    // Process color images with Cloudinary
     const colorImages = await Promise.all(
       parsedColors.map(async (color) => {
         const matchedFiles = uploadedFiles.filter(
@@ -225,68 +239,58 @@ export const createProductController = async (req, res) => {
           );
         }
 
-        // Process matched files with hybrid storage
-        const hybridImages = await hybridImageService.processMultipleHybridUploads(
+        // Upload matched files to Cloudinary
+        const folder = `ecommerce/products/${categoryDoc.category}/${color.colorName}`;
+        const cloudinaryResults = await uploadMultipleToCloudinaryWithProgress(
           matchedFiles,
           {
-            productCategory: category,
-            colorId: color.colorId,
-            colorName: color.colorName
+            folder,
+            public_id: `${color.colorId}_${Date.now()}`,
+            quality: "auto:good",
+            fetch_format: "auto",
           }
         );
 
-        // For color images, we maintain backward compatibility with string array
-        const images = hybridImages.map(img => img.localPath);
-        
-        // Store hybrid data for future enhancement (can be used later)
-        const imageMetadata = hybridImages.map(img => ({
-          localPath: img.localPath,
-          filename: img.filename,
-          originalName: img.originalName,
-          uploadedAt: img.uploadedAt,
-          storageType: img.storageType
-        }));
+        // Extract URLs from successful uploads
+        const images = extractUrlsFromCloudinaryResults(cloudinaryResults);
+
+        if (images.length === 0) {
+          throw new Error(
+            `Failed to upload images for color ${color.colorName}`
+          );
+        }
 
         return {
           colorId: color.colorId,
           colorName: color.colorName,
           colorCode: color.colorCode,
-          images, // Keep as string array for now (backward compatible)
+          images, // Array of Cloudinary URLs
           sizes: isClothing ? color.sizes : [],
-          // Store metadata for future use
-          _imageMetadata: imageMetadata
         };
       })
     );
 
-    // Process general images with hybrid storage
+    // Process general images with Cloudinary
     const generalFiles = uploadedFiles.filter(
       (f) => f.fieldname === "generalImage"
     );
-    
+
     let generalImages = [];
     if (generalFiles.length > 0) {
-      const hybridGeneralImages = await hybridImageService.processMultipleHybridUploads(
+      // Upload general images to Cloudinary
+      const folder = `ecommerce/products/${categoryDoc.category}/general`;
+      const cloudinaryResults = await uploadMultipleToCloudinaryWithProgress(
         generalFiles,
         {
-          productCategory: category,
-          type: 'general'
+          folder,
+          public_id: `general_${Date.now()}`,
+          quality: "auto:good",
+          fetch_format: "auto",
         }
       );
 
-      // Create enhanced image objects with hybrid storage
-      generalImages = hybridGeneralImages.map(img => ({
-        public_id: img.public_id,
-        url: img.url,
-        localPath: img.localPath,
-        cloudinaryUrl: img.cloudinaryUrl,
-        filename: img.filename,
-        originalName: img.originalName,
-        uploadedAt: img.uploadedAt,
-        isCloudinaryUploaded: img.isCloudinaryUploaded,
-        storageType: img.storageType,
-        metadata: img.metadata
-      }));
+      // Format Cloudinary results for database storage
+      generalImages = formatCloudinaryResultsForDB(cloudinaryResults);
     }
 
     const product = await productModel.create({
@@ -382,22 +386,34 @@ export const updateProductController = async (req, res) => {
 
     // Add subcategory if it doesn't exist
     if (subcategory) {
-      const existingSubcategory = categoryDoc.subcategories.find(subcat => subcat.name === subcategory);
+      const existingSubcategory = categoryDoc.subcategories.find(
+        (subcat) => subcat.name === subcategory
+      );
       if (!existingSubcategory) {
-        categoryDoc.subcategories.push({ name: subcategory, subSubCategories: [] });
+        categoryDoc.subcategories.push({
+          name: subcategory,
+          subSubCategories: [],
+        });
         await categoryDoc.save();
       }
 
       // Add sub-subcategory if it doesn't exist
       if (subcategory && subSubcategory) {
-        const subcatIndex = categoryDoc.subcategories.findIndex((subcat) => subcat.name === subcategory);
+        const subcatIndex = categoryDoc.subcategories.findIndex(
+          (subcat) => subcat.name === subcategory
+        );
         if (subcatIndex !== -1) {
-          const existingSubSubcategory = categoryDoc.subcategories[subcatIndex].subSubCategories.find(subSubcat => {
-            const name = typeof subSubcat === 'string' ? subSubcat : subSubcat.name;
+          const existingSubSubcategory = categoryDoc.subcategories[
+            subcatIndex
+          ].subSubCategories.find((subSubcat) => {
+            const name =
+              typeof subSubcat === "string" ? subSubcat : subSubcat.name;
             return name === subSubcategory;
           });
           if (!existingSubSubcategory) {
-            categoryDoc.subcategories[subcatIndex].subSubCategories.push({ name: subSubcategory });
+            categoryDoc.subcategories[subcatIndex].subSubCategories.push({
+              name: subSubcategory,
+            });
             await categoryDoc.save();
           }
         }
@@ -506,17 +522,32 @@ export const updateProductImageController = async (req, res) => {
 
     const uploadedFiles = req.files || [];
 
-    // ✅ Update General Image
+    // ✅ Update General Image with Cloudinary
     const generalFile = uploadedFiles.find(
       (f) => f.fieldname === "generalImage"
     );
     if (generalFile) {
-      product.images = [
-        {
-          public_id: generalFile.filename,
-          url: `/uploads/products/${generalFile.filename}`,
-        },
-      ];
+      // Upload to Cloudinary
+      const folder = `ecommerce/products/${product.categoryName}/general`;
+      const cloudinaryResult = await uploadFileToCloudinary(generalFile, {
+        folder,
+        public_id: `general_${Date.now()}`,
+        quality: "auto:good",
+        fetch_format: "auto",
+      });
+
+      if (cloudinaryResult.success) {
+        // Delete old general images from Cloudinary if they exist
+        if (product.images && product.images.length > 0) {
+          await deleteImagesFromCloudinary(product.images);
+        }
+
+        product.images = formatCloudinaryResultsForDB([cloudinaryResult]);
+      } else {
+        throw new Error(
+          `Failed to upload general image: ${cloudinaryResult.error}`
+        );
+      }
     }
 
     const existingColorsMap = {};
@@ -524,54 +555,67 @@ export const updateProductImageController = async (req, res) => {
       existingColorsMap[c.colorId] = c;
     });
 
-    const newColorsList = parsedColors.map((incomingColor) => {
-      const existing = existingColorsMap[incomingColor.colorId];
+    const newColorsList = await Promise.all(
+      parsedColors.map(async (incomingColor) => {
+        const existing = existingColorsMap[incomingColor.colorId];
 
-      const matchedFiles = uploadedFiles.filter(
-        (f) => f.fieldname === incomingColor.colorId
-      );
+        const matchedFiles = uploadedFiles.filter(
+          (f) => f.fieldname === incomingColor.colorId
+        );
 
-      let updatedImages = existing ? [...existing.images] : [];
+        let updatedImages = existing ? [...existing.images] : [];
 
-      matchedFiles.forEach((file) => {
-        const fileIndex = parseInt(file.originalname.split("_")[1]);
-        const newImagePath = `/uploads/products/${file.filename}`;
+        if (matchedFiles.length > 0) {
+          // Upload new color images to Cloudinary
+          const folder = `ecommerce/products/${product.categoryName}/${incomingColor.colorName}`;
+          const cloudinaryResults =
+            await uploadMultipleToCloudinaryWithProgress(matchedFiles, {
+              folder,
+              public_id: `${incomingColor.colorId}_${Date.now()}`,
+              quality: "auto:good",
+              fetch_format: "auto",
+            });
 
-        if (!isNaN(fileIndex) && fileIndex < updatedImages.length) {
-          updatedImages[fileIndex] = newImagePath;
-        } else {
-          updatedImages.push(newImagePath);
+          // Extract URLs from successful uploads
+          const newImageUrls =
+            extractUrlsFromCloudinaryResults(cloudinaryResults);
+
+          if (newImageUrls.length > 0) {
+            // Replace existing images or add new ones
+            updatedImages = [...updatedImages, ...newImageUrls];
+          }
         }
-      });
 
-      // Ensure sizes properly carry over discount values
-      const updatedSizes =
-        incomingColor.sizes?.length > 0
-          ? incomingColor.sizes.map((size) => {
-              console.log(`Size ${size.size} data:`, {
-                price: size.price,
-                discountper: size.discountper,
-                discountprice: size.discountprice,
-              });
+        // Ensure sizes properly carry over discount values
+        const updatedSizes =
+          incomingColor.sizes?.length > 0
+            ? incomingColor.sizes.map((size) => {
+                console.log(`Size ${size.size} data:`, {
+                  price: size.price,
+                  discountper: size.discountper,
+                  discountprice: size.discountprice,
+                });
 
-              return {
-                size: size.size,
-                price: Number(size.price) || 0,
-                stock: Number(size.stock) || 0,
-                discountper: size.discountper || "0",
-                discountprice: Number(size.discountprice) || 0,
-              };
-            })
-          : existing?.sizes || [];
+                return {
+                  size: size.size,
+                  price: Number(size.price) || 0,
+                  stock: Number(size.stock) || 0,
+                  discountper: size.discountper || "0",
+                  discountprice: Number(size.discountprice) || 0,
+                };
+              })
+            : existing?.sizes || [];
 
-      return {
-        colorId: incomingColor.colorId,
-        colorName: incomingColor.colorName || existing?.colorName || "",
-        colorCode: incomingColor.colorCode || existing?.colorCode || "#000000",
-        images: updatedImages,
-        sizes: updatedSizes,
-      };
-    });
+        return {
+          colorId: incomingColor.colorId,
+          colorName: incomingColor.colorName || existing?.colorName || "",
+          colorCode:
+            incomingColor.colorCode || existing?.colorCode || "#000000",
+          images: updatedImages,
+          sizes: updatedSizes,
+        };
+      })
+    );
 
     product.colors = newColorsList;
 
@@ -676,7 +720,7 @@ export const deleteProductImageController = async (req, res) => {
         .json({ success: false, message: "Product Not Found" });
     }
 
-    const { imageUrl, color } = req.query;
+    const { imageUrl, color, publicId } = req.query;
 
     if (!imageUrl) {
       return res
@@ -702,8 +746,18 @@ export const deleteProductImageController = async (req, res) => {
           .json({ success: false, message: "Color image not found" });
       }
 
-      const filePath = path.join(process.cwd(), imageUrl);
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      // Delete from Cloudinary if public_id is available
+      if (publicId) {
+        try {
+          await deleteFromCloudinary(publicId);
+          console.log(`✅ Deleted image from Cloudinary: ${publicId}`);
+        } catch (error) {
+          console.log(`❌ Failed to delete from Cloudinary: ${error.message}`);
+        }
+      } else {
+        // Fallback: try to delete local file if exists
+        cleanupLocalFile(imageUrl);
+      }
 
       product.colors[colorIndex].images.splice(imageIndex, 1);
     } else {
@@ -715,8 +769,21 @@ export const deleteProductImageController = async (req, res) => {
           .json({ success: false, message: "Product image not found" });
       }
 
-      const filePath = path.join(process.cwd(), product.images[imgIndex].url);
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      // Delete from Cloudinary
+      const imageToDelete = product.images[imgIndex];
+      if (imageToDelete.public_id) {
+        try {
+          await deleteFromCloudinary(imageToDelete.public_id);
+          console.log(
+            `✅ Deleted image from Cloudinary: ${imageToDelete.public_id}`
+          );
+        } catch (error) {
+          console.log(`❌ Failed to delete from Cloudinary: ${error.message}`);
+        }
+      } else {
+        // Fallback: try to delete local file if exists
+        cleanupLocalFile(imageToDelete.url);
+      }
 
       product.images.splice(imgIndex, 1);
     }
@@ -742,46 +809,64 @@ export const deleteAllProductImagesController = async (req, res) => {
         .json({ success: false, message: "Product not found" });
     }
 
-    // ✅ Delete general images safely
-    if (Array.isArray(product.images)) {
-      product.images.forEach((img) => {
-        if (img?.url) {
-          const filename = img.url.split("/").pop();
-          if (filename) {
-            const filePath = path.join(
-              process.cwd(),
-              "uploads",
-              "products",
-              filename
-            );
-            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    // ✅ Delete general images from Cloudinary
+    if (Array.isArray(product.images) && product.images.length > 0) {
+      try {
+        await deleteImagesFromCloudinary(product.images);
+        console.log(
+          `✅ Deleted ${product.images.length} general images from Cloudinary`
+        );
+      } catch (error) {
+        console.log(
+          `❌ Failed to delete general images from Cloudinary: ${error.message}`
+        );
+        // Fallback: try to delete local files if Cloudinary deletion fails
+        product.images.forEach((img) => {
+          if (img?.url) {
+            cleanupLocalFile(img.url);
           }
-        }
-      });
+        });
+      }
       product.images = [];
     }
 
-    // ✅ Delete color images safely
+    // ✅ Delete color images from Cloudinary
     if (Array.isArray(product.colors)) {
-      product.colors.forEach((color) => {
-        if (Array.isArray(color.images)) {
-          color.images.forEach((img) => {
-            if (img) {
-              const filename = img.split("/").pop();
-              if (filename) {
-                const filePath = path.join(
-                  process.cwd(),
-                  "uploads",
-                  "products",
-                  filename
+      for (const color of product.colors) {
+        if (Array.isArray(color.images) && color.images.length > 0) {
+          // For color images, we only have URLs, so we need to extract public_ids
+          const imageObjects = color.images.map((url) => ({ url }));
+          try {
+            // Try to extract public_id from URL for Cloudinary deletion
+            const publicIds = color.images
+              .map((url) => {
+                // Extract public_id from Cloudinary URL
+                // Format: https://res.cloudinary.com/cloud_name/image/upload/v123456/folder/public_id.ext
+                const match = url.match(
+                  /\/upload\/(?:v\d+\/)?(.+?)(?:\.[^.]*)?$/
                 );
-                if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-              }
+                return match ? match[1] : null;
+              })
+              .filter(Boolean);
+
+            if (publicIds.length > 0) {
+              await Promise.all(
+                publicIds.map((publicId) => deleteFromCloudinary(publicId))
+              );
+              console.log(
+                `✅ Deleted ${publicIds.length} color images from Cloudinary`
+              );
             }
-          });
+          } catch (error) {
+            console.log(
+              `❌ Failed to delete color images from Cloudinary: ${error.message}`
+            );
+            // Fallback: try to delete local files
+            color.images.forEach((url) => cleanupLocalFile(url));
+          }
           color.images = [];
         }
-      });
+      }
     }
 
     await product.save();
@@ -850,35 +935,61 @@ export const deleteProductController = async (req, res) => {
       });
     }
 
-    // Delete general images from server
-    product.images.forEach((img) => {
-      if (img?.url) {
-        const filename = img.url.split("/").pop();
-        const filePath = path.join(
-          process.cwd(),
-          "uploads",
-          "products",
-          filename
+    // Delete general images from Cloudinary
+    if (Array.isArray(product.images) && product.images.length > 0) {
+      try {
+        await deleteImagesFromCloudinary(product.images);
+        console.log(
+          `✅ Deleted ${product.images.length} general images from Cloudinary`
         );
-        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      } catch (error) {
+        console.log(
+          `❌ Failed to delete general images from Cloudinary: ${error.message}`
+        );
+        // Fallback: try to delete local files
+        product.images.forEach((img) => {
+          if (img?.url) {
+            cleanupLocalFile(img.url);
+          }
+        });
       }
-    });
+    }
 
-    // Delete color images from server
-    product.colors.forEach((color) => {
-      color.images.forEach((img) => {
-        if (img) {
-          const filename = img.split("/").pop();
-          const filePath = path.join(
-            process.cwd(),
-            "uploads",
-            "products",
-            filename
-          );
-          if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    // Delete color images from Cloudinary
+    if (Array.isArray(product.colors)) {
+      for (const color of product.colors) {
+        if (Array.isArray(color.images) && color.images.length > 0) {
+          try {
+            // Extract public_id from URL for Cloudinary deletion
+            const publicIds = color.images
+              .map((url) => {
+                // Extract public_id from Cloudinary URL
+                // Format: https://res.cloudinary.com/cloud_name/image/upload/v123456/folder/public_id.ext
+                const match = url.match(
+                  /\/upload\/(?:v\d+\/)?(.+?)(?:\.[^.]*)?$/
+                );
+                return match ? match[1] : null;
+              })
+              .filter(Boolean);
+
+            if (publicIds.length > 0) {
+              await Promise.all(
+                publicIds.map((publicId) => deleteFromCloudinary(publicId))
+              );
+              console.log(
+                `✅ Deleted ${publicIds.length} color images from Cloudinary`
+              );
+            }
+          } catch (error) {
+            console.log(
+              `❌ Failed to delete color images from Cloudinary: ${error.message}`
+            );
+            // Fallback: try to delete local files
+            color.images.forEach((url) => cleanupLocalFile(url));
+          }
         }
-      });
-    });
+      }
+    }
 
     // Delete product from DB
     await product.deleteOne();

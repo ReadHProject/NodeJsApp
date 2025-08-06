@@ -59,13 +59,31 @@ const ColorSchema = new mongoose.Schema({
     },
   ],
   images: {
-    type: [String],
+    type: [String], // Array of URLs (can be local paths or Cloudinary URLs)
     required: true,
     validate: {
       validator: (arr) => arr.length >= 1,
       message: (props) => `Color ${props.value} must have at least 1 images.`,
     },
   },
+  // Enhanced image storage with Cloudinary support
+  imageDetails: [
+    {
+      url: { type: String, required: true }, // The actual URL (local or Cloudinary)
+      public_id: { type: String, default: null }, // Cloudinary public ID
+      localPath: { type: String, default: null }, // Local file path if stored locally
+      isCloudinaryUploaded: { type: Boolean, default: false },
+      storageType: { type: String, enum: ['local', 'cloudinary'], default: 'local' },
+      uploadedAt: { type: Date, default: Date.now },
+      metadata: {
+        size: { type: Number, default: null },
+        mimetype: { type: String, default: null },
+        width: { type: Number, default: null },
+        height: { type: Number, default: null },
+        format: { type: String, default: null }
+      }
+    }
+  ],
 });
 
 //PRODUCT MODEL
@@ -130,8 +148,10 @@ const productSchema = new mongoose.Schema(
     },
     images: [
       {
-        public_id: String,
-        url: String,
+        // Legacy fields for backward compatibility
+        public_id: { type: String, default: null },
+        url: { type: String, default: null },
+        
         // Enhanced hybrid storage fields (backward compatible)
         localPath: { type: String, default: null },
         cloudinaryUrl: { type: String, default: null },
@@ -141,12 +161,24 @@ const productSchema = new mongoose.Schema(
         isCloudinaryUploaded: { type: Boolean, default: false },
         storageType: { type: String, enum: ['local', 'cloudinary', 'hybrid', 'legacy'], default: 'local' },
         cloudinaryUploadedAt: { type: Date, default: null },
+        
+        // Metadata for better file management
         metadata: {
-          size: Number,
-          mimetype: String,
-          productId: String,
-          colorId: String,
-          index: Number
+          size: { type: Number, default: null },
+          mimetype: { type: String, default: null },
+          productId: { type: String, default: null },
+          colorId: { type: String, default: null },
+          index: { type: Number, default: null },
+          width: { type: Number, default: null },
+          height: { type: Number, default: null },
+          format: { type: String, default: null }
+        },
+        
+        // Migration status for data migration purposes
+        migrationStatus: {
+          type: String,
+          enum: ['pending', 'migrating', 'completed', 'failed', 'not_required'],
+          default: 'not_required'
         }
       },
     ],
