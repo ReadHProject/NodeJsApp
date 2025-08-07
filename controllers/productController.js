@@ -569,11 +569,23 @@ export const updateProductImageController = async (req, res) => {
         );
 
         let updatedImages = existing ? [...existing.images] : [];
+        let updatedHybridImages = existing ? [...(existing.hybridImages || [])] : [];
 
         if (matchedFiles.length > 0) {
           // Get category information for folder structure
           const categoryDoc = await categoryModel.findById(product.category);
           const categoryName = categoryDoc ? categoryDoc.category : (product.categoryName || 'general');
+          
+          // Check if this is a clothing category
+          const clothingCategories = [
+            "clothing",
+            "clothes",
+            "shoes",
+            "accessories",
+            "fashion",
+            "apparel",
+          ];
+          const isClothing = clothingCategories.includes(categoryName.toLowerCase());
           
           // Upload new color images to Cloudinary
           const folder = `ecommerce/products/${categoryName}/${incomingColor.colorName}`;
@@ -585,13 +597,39 @@ export const updateProductImageController = async (req, res) => {
               fetch_format: "auto",
             });
 
-          // Extract URLs from successful uploads
-          const newImageUrls =
-            extractUrlsFromCloudinaryResults(cloudinaryResults);
-
-          if (newImageUrls.length > 0) {
-            // Replace existing images or add new ones
-            updatedImages = [...updatedImages, ...newImageUrls];
+          if (isClothing) {
+            // For clothing categories: use hybrid storage format
+            const formattedColorImages = formatCloudinaryResultsForDB(
+              cloudinaryResults, 
+              matchedFiles
+            );
+            
+            // Enrich with color-specific metadata
+            const enrichedColorImages = formattedColorImages.map((img, index) => ({
+              ...img,
+              metadata: {
+                ...img.metadata,
+                productId: product._id.toString(),
+                colorId: incomingColor.colorId,
+                colorName: incomingColor.colorName,
+                index: index
+              }
+            }));
+            
+            // Store in hybridImages array
+            updatedHybridImages = [...updatedHybridImages, ...enrichedColorImages];
+            
+            // Extract URLs for backward compatibility with existing frontend
+            const newImageUrls = extractUrlsFromCloudinaryResults(cloudinaryResults);
+            if (newImageUrls.length > 0) {
+              updatedImages = [...updatedImages, ...newImageUrls];
+            }
+          } else {
+            // For non-clothing categories: just extract URLs (legacy behavior)
+            const newImageUrls = extractUrlsFromCloudinaryResults(cloudinaryResults);
+            if (newImageUrls.length > 0) {
+              updatedImages = [...updatedImages, ...newImageUrls];
+            }
           }
         }
 
@@ -621,6 +659,7 @@ export const updateProductImageController = async (req, res) => {
           colorCode:
             incomingColor.colorCode || existing?.colorCode || "#000000",
           images: updatedImages,
+          hybridImages: updatedHybridImages,
           sizes: updatedSizes,
         };
       })
