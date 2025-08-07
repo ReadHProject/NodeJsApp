@@ -59,14 +59,57 @@ const ColorSchema = new mongoose.Schema({
     },
   ],
   images: {
-    type: [String], // Array of URLs (can be local paths or Cloudinary URLs)
+    type: [String], // Array of URLs (can be local paths or Cloudinary URLs) - Keep for backward compatibility
     required: true,
     validate: {
       validator: (arr) => arr.length >= 1,
       message: (props) => `Color ${props.value} must have at least 1 images.`,
     },
   },
-  // Enhanced image storage with Cloudinary support
+  // Enhanced hybrid storage images (new approach)
+  hybridImages: [
+    {
+      // Cloudinary data (primary)
+      public_id: { type: String, default: null },
+      url: { type: String, default: null },
+      width: { type: Number, default: null },
+      height: { type: Number, default: null },
+      format: { type: String, default: null },
+      resource_type: { type: String, default: null },
+      created_at: { type: Date, default: null },
+      bytes: { type: Number, default: null },
+      folder: { type: String, default: null },
+      version: { type: Number, default: null },
+      
+      // Hybrid storage fields
+      localPath: { type: String, default: null },
+      cloudinaryUrl: { type: String, default: null },
+      filename: { type: String, default: null },
+      originalName: { type: String, default: null },
+      uploadedAt: { type: Date, default: Date.now },
+      isCloudinaryUploaded: { type: Boolean, default: false },
+      storageType: { type: String, enum: ['local', 'cloudinary', 'hybrid', 'legacy'], default: 'local' },
+      cloudinaryUploadedAt: { type: Date, default: null },
+      
+      // Enhanced metadata
+      metadata: {
+        size: { type: Number, default: null },
+        mimetype: { type: String, default: null },
+        colorId: { type: String, default: null },
+        index: { type: Number, default: null },
+        width: { type: Number, default: null },
+        height: { type: Number, default: null },
+        format: { type: String, default: null }
+      },
+      
+      migrationStatus: {
+        type: String,
+        enum: ['pending', 'migrating', 'completed', 'failed', 'not_required'],
+        default: 'not_required'
+      }
+    }
+  ],
+  // Legacy imageDetails - kept for backward compatibility
   imageDetails: [
     {
       url: { type: String, required: true }, // The actual URL (local or Cloudinary)
@@ -210,6 +253,50 @@ const productSchema = new mongoose.Schema(
         message: "Products in 'Clothes' category must have at least one color.",
       },
     },
+    
+    // Multiple images for non-clothing categories
+    multipleImages: [
+      {
+        // Cloudinary data (primary)
+        public_id: { type: String, default: null },
+        url: { type: String, default: null },
+        width: { type: Number, default: null },
+        height: { type: Number, default: null },
+        format: { type: String, default: null },
+        resource_type: { type: String, default: null },
+        created_at: { type: Date, default: null },
+        bytes: { type: Number, default: null },
+        folder: { type: String, default: null },
+        version: { type: Number, default: null },
+        
+        // Hybrid storage fields
+        localPath: { type: String, default: null },
+        cloudinaryUrl: { type: String, default: null },
+        filename: { type: String, default: null },
+        originalName: { type: String, default: null },
+        uploadedAt: { type: Date, default: Date.now },
+        isCloudinaryUploaded: { type: Boolean, default: false },
+        storageType: { type: String, enum: ['local', 'cloudinary', 'hybrid', 'legacy'], default: 'local' },
+        cloudinaryUploadedAt: { type: Date, default: null },
+        
+        // Enhanced metadata
+        metadata: {
+          size: { type: Number, default: null },
+          mimetype: { type: String, default: null },
+          productId: { type: String, default: null },
+          index: { type: Number, default: null },
+          width: { type: Number, default: null },
+          height: { type: Number, default: null },
+          format: { type: String, default: null }
+        },
+        
+        migrationStatus: {
+          type: String,
+          enum: ['pending', 'migrating', 'completed', 'failed', 'not_required'],
+          default: 'not_required'
+        }
+      }
+    ],
   },
   { timestamps: true }
 );

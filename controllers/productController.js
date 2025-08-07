@@ -480,7 +480,7 @@ export const updateProductController = async (req, res) => {
 //UPDATE PRODUCT IMAGE
 export const updateProductImageController = async (req, res) => {
   try {
-    const { colors, subcategory } = req.body;
+    const { colors, subcategory, subSubcategory, multipleImagesMetadata } = req.body;
 
     const product = await productModel.findById(req.params.id);
     if (!product) {
@@ -627,6 +627,77 @@ export const updateProductImageController = async (req, res) => {
     );
 
     product.colors = newColorsList;
+
+    // ✅ Handle multiple images for non-clothing categories
+    const multipleImageFiles = uploadedFiles.filter(
+      (f) => f.fieldname === "multipleImages"
+    );
+    
+    if (multipleImageFiles.length > 0) {
+      console.log(`🔄 Processing ${multipleImageFiles.length} multiple images...`);
+      
+      // Get category information for folder structure
+      const categoryDoc = await categoryModel.findById(product.category);
+      const categoryName = categoryDoc ? categoryDoc.category : (product.categoryName || 'general');
+      
+      // Upload multiple images to Cloudinary
+      const folder = `ecommerce/products/${categoryName}/multiple`;
+      const cloudinaryResults = await uploadMultipleToCloudinaryWithProgress(
+        multipleImageFiles,
+        {
+          folder,
+          public_id: `multiple_${Date.now()}`,
+          quality: "auto:good",
+          fetch_format: "auto",
+        }
+      );
+      
+      // Format Cloudinary results for database storage with original file info
+      const formattedMultipleImages = formatCloudinaryResultsForDB(
+        cloudinaryResults, 
+        multipleImageFiles
+      );
+      
+      // Parse metadata from frontend if provided
+      let parsedMetadata = [];
+      try {
+        parsedMetadata = multipleImagesMetadata ? JSON.parse(multipleImagesMetadata) : [];
+      } catch (err) {
+        console.log("Warning: Could not parse multipleImagesMetadata:", err.message);
+      }
+      
+      // Merge with parsed metadata from frontend
+      const enrichedMultipleImages = formattedMultipleImages.map((img, index) => {
+        const frontendMetadata = parsedMetadata[index] || {};
+        return {
+          ...img,
+          filename: frontendMetadata.fileName || img.filename,
+          originalName: frontendMetadata.fileName || img.originalName,
+          metadata: {
+            ...img.metadata,
+            size: frontendMetadata.fileSize || img.metadata?.size,
+            width: frontendMetadata.width || img.metadata?.width,
+            height: frontendMetadata.height || img.metadata?.height,
+            productId: product._id.toString(),
+            index: index
+          }
+        };
+      });
+      
+      // Replace or append to existing multiple images
+      if (product.multipleImages && product.multipleImages.length > 0) {
+        // Delete old multiple images from Cloudinary if they exist
+        await deleteImagesFromCloudinary(product.multipleImages);
+      }
+      
+      product.multipleImages = enrichedMultipleImages;
+      console.log(`✅ Successfully processed ${enrichedMultipleImages.length} multiple images`);
+    }
+
+    // Update subSubcategory if provided
+    if (subSubcategory !== undefined) {
+      product.subSubcategory = subSubcategory;
+    }
 
     // ✅ Auto-Calculate Total Stock
     let totalStock = 0;
