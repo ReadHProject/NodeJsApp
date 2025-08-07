@@ -33,7 +33,9 @@ export class ImageResolver {
       
       // Priority 3: Check if local file exists
       if (imageData.localPath) {
-        const fullLocalPath = path.join(process.cwd(), imageData.localPath);
+        // Handle relative paths properly
+        const relativePath = imageData.localPath.startsWith('/') ? imageData.localPath.substring(1) : imageData.localPath;
+        const fullLocalPath = path.join(process.cwd(), relativePath);
         if (fs.existsSync(fullLocalPath)) {
           return baseUrl + imageData.localPath;
         }

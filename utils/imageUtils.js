@@ -139,7 +139,7 @@ export const formatCloudinaryResultsForDB = (uploadResults, originalFiles = []) 
         version: result.data.version,
         
         // Hybrid storage fields
-        localPath: originalFile?.path || null,
+        localPath: originalFile?.filename ? `/uploads/products/${originalFile.filename}` : null,
         cloudinaryUrl: result.data.url,
         filename: originalFile?.filename || null,
         originalName: originalFile?.originalname || null,
