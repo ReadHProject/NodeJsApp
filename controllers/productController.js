@@ -699,16 +699,32 @@ export const updateProductImageController = async (req, res) => {
       product.subSubcategory = subSubcategory;
     }
 
-    // ✅ Auto-Calculate Total Stock
-    let totalStock = 0;
-    product.colors.forEach((color) => {
-      if (color.sizes && color.sizes.length > 0) {
-        color.sizes.forEach((size) => {
-          totalStock += Number(size.stock || 0);
-        });
-      }
-    });
-    product.stock = totalStock;
+    // ✅ Auto-Calculate Total Stock (only for clothing categories)
+    const categoryDoc = await categoryModel.findById(product.category);
+    const categoryName = categoryDoc ? categoryDoc.category.toLowerCase() : (product.categoryName || '').toLowerCase();
+    const clothingCategories = [
+      "clothing",
+      "clothes",
+      "shoes",
+      "accessories",
+      "fashion",
+      "apparel",
+    ];
+    const isClothing = clothingCategories.includes(categoryName);
+    
+    // Only auto-calculate stock for clothing categories that use sizes
+    if (isClothing) {
+      let totalStock = 0;
+      product.colors.forEach((color) => {
+        if (color.sizes && color.sizes.length > 0) {
+          color.sizes.forEach((size) => {
+            totalStock += Number(size.stock || 0);
+          });
+        }
+      });
+      product.stock = totalStock;
+    }
+    // For non-clothing categories, preserve the existing stock value
 
     await product.save();
 
