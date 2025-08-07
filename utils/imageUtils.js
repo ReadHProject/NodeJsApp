@@ -114,25 +114,53 @@ export const uploadMultipleToCloudinaryWithProgress = async (files, options = {}
 };
 
 /**
- * Formats Cloudinary image results for database storage
+ * Formats Cloudinary image results for database storage with hybrid support
  * @param {Array} uploadResults - Cloudinary upload results
+ * @param {Array} originalFiles - Original file objects from multer (optional)
  * @returns {Array} - Formatted image objects for DB
  */
-export const formatCloudinaryResultsForDB = (uploadResults) => {
+export const formatCloudinaryResultsForDB = (uploadResults, originalFiles = []) => {
   return uploadResults
     .filter(result => result.success)
-    .map(result => ({
-      public_id: result.data.public_id,
-      url: result.data.url,
-      width: result.data.width,
-      height: result.data.height,
-      format: result.data.format,
-      resource_type: result.data.resource_type,
-      created_at: result.data.created_at,
-      bytes: result.data.bytes,
-      folder: result.data.folder,
-      version: result.data.version
-    }));
+    .map((result, index) => {
+      const originalFile = originalFiles[index];
+      
+      return {
+        // Cloudinary data (primary)
+        public_id: result.data.public_id,
+        url: result.data.url,
+        width: result.data.width,
+        height: result.data.height,
+        format: result.data.format,
+        resource_type: result.data.resource_type,
+        created_at: result.data.created_at,
+        bytes: result.data.bytes,
+        folder: result.data.folder,
+        version: result.data.version,
+        
+        // Hybrid storage fields
+        localPath: originalFile?.path || null,
+        cloudinaryUrl: result.data.url,
+        filename: originalFile?.filename || null,
+        originalName: originalFile?.originalname || null,
+        uploadedAt: new Date(),
+        isCloudinaryUploaded: true,
+        storageType: 'hybrid', // Both local and cloudinary
+        cloudinaryUploadedAt: new Date(),
+        
+        // Enhanced metadata
+        metadata: {
+          size: originalFile?.size || result.data.bytes || null,
+          mimetype: originalFile?.mimetype || null,
+          width: result.data.width || null,
+          height: result.data.height || null,
+          format: result.data.format || null,
+          destination: originalFile?.destination || null
+        },
+        
+        migrationStatus: 'not_required'
+      };
+    });
 };
 
 /**

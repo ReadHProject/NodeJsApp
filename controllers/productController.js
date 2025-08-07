@@ -289,8 +289,8 @@ export const createProductController = async (req, res) => {
         }
       );
 
-      // Format Cloudinary results for database storage
-      generalImages = formatCloudinaryResultsForDB(cloudinaryResults);
+      // Format Cloudinary results for database storage with original file info
+      generalImages = formatCloudinaryResultsForDB(cloudinaryResults, generalFiles);
     }
 
     const product = await productModel.create({
@@ -546,7 +546,8 @@ export const updateProductImageController = async (req, res) => {
           await deleteImagesFromCloudinary(product.images);
         }
 
-        product.images = formatCloudinaryResultsForDB([cloudinaryResult]);
+        // Pass original file info for hybrid storage
+        product.images = formatCloudinaryResultsForDB([cloudinaryResult], [generalFile]);
       } else {
         throw new Error(
           `Failed to upload general image: ${cloudinaryResult.error}`
