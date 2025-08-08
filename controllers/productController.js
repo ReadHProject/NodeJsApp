@@ -560,13 +560,27 @@ export const updateProductImageController = async (req, res) => {
       existingColorsMap[c.colorId] = c;
     });
 
-    const newColorsList = await Promise.all(
-      parsedColors.map(async (incomingColor) => {
+    // Only process colors that are explicitly being updated
+    const colorsToUpdate = parsedColors.length > 0 ? parsedColors : [];
+    
+    if (colorsToUpdate.length === 0) {
+      console.log('No colors provided for update, skipping color processing');
+    } else {
+      console.log('Processing colors for update:', colorsToUpdate.map(c => c.colorId));
+    }
+
+    const updatedColorsMap = {};
+    
+    // Process only the colors that are being updated
+    await Promise.all(
+      colorsToUpdate.map(async (incomingColor) => {
         const existing = existingColorsMap[incomingColor.colorId];
+        console.log(`Processing color ${incomingColor.colorId}, existing:`, !!existing);
 
         const matchedFiles = uploadedFiles.filter(
           (f) => f.fieldname === incomingColor.colorId
         );
+        console.log(`Found ${matchedFiles.length} files for color ${incomingColor.colorId}`);
 
         let updatedImages = existing ? [...existing.images] : [];
         let updatedHybridImages = existing ? [...(existing.hybridImages || [])] : [];
@@ -653,7 +667,7 @@ export const updateProductImageController = async (req, res) => {
               })
             : existing?.sizes || [];
 
-        return {
+        const updatedColor = {
           colorId: incomingColor.colorId,
           colorName: incomingColor.colorName || existing?.colorName || "",
           colorCode:
@@ -662,10 +676,37 @@ export const updateProductImageController = async (req, res) => {
           hybridImages: updatedHybridImages,
           sizes: updatedSizes,
         };
+        
+        updatedColorsMap[incomingColor.colorId] = updatedColor;
+        console.log(`Updated color ${incomingColor.colorId}:`, {
+          imagesCount: updatedImages.length,
+          hybridImagesCount: updatedHybridImages.length,
+          sizesCount: updatedSizes.length
+        });
       })
     );
 
-    product.colors = newColorsList;
+    // Merge updated colors with existing colors
+    const finalColorsList = product.colors.map(existingColor => {
+      if (updatedColorsMap[existingColor.colorId]) {
+        // Use the updated version
+        return updatedColorsMap[existingColor.colorId];
+      } else {
+        // Keep the existing color unchanged
+        return existingColor;
+      }
+    });
+    
+    // Add any completely new colors that weren't in the original product
+    Object.values(updatedColorsMap).forEach(updatedColor => {
+      const exists = finalColorsList.some(color => color.colorId === updatedColor.colorId);
+      if (!exists) {
+        finalColorsList.push(updatedColor);
+      }
+    });
+
+    product.colors = finalColorsList;
+    console.log('Final colors list:', finalColorsList.map(c => ({ colorId: c.colorId, imagesCount: c.images?.length || 0 })));
 
     // ✅ Handle multiple images for non-clothing categories
     const multipleImageFiles = uploadedFiles.filter(
