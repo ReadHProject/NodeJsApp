@@ -480,7 +480,14 @@ export const updateProductController = async (req, res) => {
 //UPDATE PRODUCT IMAGE
 export const updateProductImageController = async (req, res) => {
   try {
+    console.log('🔄 updateProductImageController called');
+    console.log('Request body keys:', Object.keys(req.body));
+    console.log('Request files count:', req.files ? req.files.length : 0);
+    console.log('Product ID:', req.params.id);
+    
     const { colors, subcategory, subSubcategory, multipleImagesMetadata } = req.body;
+    console.log('Raw colors from req.body:', colors);
+    console.log('Colors type:', typeof colors);
 
     const product = await productModel.findById(req.params.id);
     if (!product) {
@@ -488,23 +495,30 @@ export const updateProductImageController = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Product Not Found" });
     }
+    console.log('Product found:', product._id);
 
-    // Update subcategory if provided
+    // Update subcategory if provided (handle array or string)
     if (subcategory !== undefined) {
-      product.subcategory = subcategory;
+      // If subcategory is an array, take the first element, otherwise use as-is
+      product.subcategory = Array.isArray(subcategory) ? subcategory[0] : subcategory;
     }
 
     let parsedColors = [];
-    try {
-      parsedColors = typeof colors === "string" ? JSON.parse(colors) : colors;
-      console.log(
-        "Parsed Colors from request:",
-        JSON.stringify(parsedColors, null, 2)
-      );
-    } catch (err) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid colors JSON" });
+    if (colors) {
+      try {
+        parsedColors = typeof colors === "string" ? JSON.parse(colors) : (Array.isArray(colors) ? colors : []);
+        console.log(
+          "Parsed Colors from request:",
+          JSON.stringify(parsedColors, null, 2)
+        );
+      } catch (err) {
+        console.error('Error parsing colors:', err);
+        return res
+          .status(400)
+          .json({ success: false, message: `Invalid colors JSON: ${err.message}` });
+      }
+    } else {
+      console.log('No colors provided in request');
     }
 
     // ✅ Prevent duplicate colors in incoming data
@@ -774,9 +788,10 @@ export const updateProductImageController = async (req, res) => {
       console.log(`✅ Successfully processed ${enrichedMultipleImages.length} multiple images`);
     }
 
-    // Update subSubcategory if provided
+    // Update subSubcategory if provided (handle array or string)
     if (subSubcategory !== undefined) {
-      product.subSubcategory = subSubcategory;
+      // If subSubcategory is an array, take the first element, otherwise use as-is
+      product.subSubcategory = Array.isArray(subSubcategory) ? subSubcategory[0] : subSubcategory;
     }
 
     // ✅ Auto-Calculate Total Stock (only for clothing categories)
