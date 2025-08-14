@@ -338,6 +338,8 @@ export const updatePasswordController = async (req, res) => {
 
 export const updateProfilePicController = async (req, res) => {
   try {
+    console.log('🔄 updateProfilePicController called');
+    
     const user = await userModel.findById(req.user._id);
 
     if (!user) {
@@ -354,43 +356,108 @@ export const updateProfilePicController = async (req, res) => {
       });
     }
 
-    const profileDir = path.join(process.cwd(), "uploads", "profile");
+    console.log('📁 Processing profile picture upload:', {
+      fieldname: req.file.fieldname,
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size
+    });
 
-    // ✅ Ensure uploads/profile folder exists
-    if (!fs.existsSync(profileDir)) {
-      fs.mkdirSync(profileDir, { recursive: true });
+    // Import imageUtils functions
+    const { uploadFileToCloudinary, formatCloudinaryResultsForDB, deleteImagesFromCloudinary } = await import('../utils/imageUtils.js');
+    
+    // Upload to Cloudinary with hybrid storage
+    const folder = `ecommerce/users/profile`;
+    const cloudinaryResult = await uploadFileToCloudinary(req.file, {
+      folder,
+      public_id: `profile_${user._id}_${Date.now()}`,
+      quality: "auto:good",
+      fetch_format: "auto",
+      transformation: [
+        { width: 400, height: 400, crop: "fill", gravity: "face" },
+        { quality: "auto:good" }
+      ]
+    });
+
+    if (!cloudinaryResult.success) {
+      throw new Error(`Failed to upload profile picture: ${cloudinaryResult.error}`);
     }
 
-    const newFileName = req.file.filename;
-    const newImagePath = `/uploads/profile/${newFileName}`;
-    const oldFileName = user.profilePic?.public_id;
+    console.log('✅ Cloudinary upload successful');
 
-    // ✅ Delete old image from /uploads/profile if it exists
-    if (oldFileName) {
-      const oldFilePath = path.join(profileDir, oldFileName);
-      if (fs.existsSync(oldFilePath)) {
-        fs.unlinkSync(oldFilePath);
+    // Delete old profile picture from Cloudinary if it exists
+    if (user.profilePic?.public_id && user.profilePic?.isCloudinaryUploaded) {
+      console.log('🗑️ Deleting old profile picture from Cloudinary');
+      try {
+        await deleteImagesFromCloudinary([user.profilePic]);
+      } catch (deleteError) {
+        console.warn('⚠️ Failed to delete old profile picture:', deleteError.message);
       }
     }
 
-    // ✅ Update or Insert new image
+    // Also handle local file cleanup for backward compatibility
+    const profileDir = path.join(process.cwd(), "uploads", "profile");
+    if (user.profilePic?.filename) {
+      const oldFilePath = path.join(profileDir, user.profilePic.filename);
+      if (fs.existsSync(oldFilePath)) {
+        try {
+          fs.unlinkSync(oldFilePath);
+          console.log('🗑️ Deleted old local profile picture');
+        } catch (deleteError) {
+          console.warn('⚠️ Failed to delete old local file:', deleteError.message);
+        }
+      }
+    }
+
+    // Format the result for database storage with hybrid approach
+    const formattedImages = formatCloudinaryResultsForDB([cloudinaryResult], [req.file]);
+    
+    if (formattedImages.length === 0) {
+      throw new Error('Failed to format image data for database storage');
+    }
+
+    // Update user profile picture with hybrid storage structure
+    const imageData = formattedImages[0];
     user.profilePic = {
-      public_id: newFileName,
-      url: newImagePath,
+      // Legacy fields for backward compatibility
+      public_id: imageData.public_id,
+      url: imageData.url,
+      
+      // Enhanced hybrid storage fields
+      localPath: imageData.localPath,
+      cloudinaryUrl: imageData.cloudinaryUrl,
+      filename: imageData.filename,
+      originalName: imageData.originalName,
+      uploadedAt: imageData.uploadedAt,
+      isCloudinaryUploaded: imageData.isCloudinaryUploaded,
+      storageType: imageData.storageType,
+      cloudinaryUploadedAt: imageData.cloudinaryUploadedAt,
+      
+      // Metadata
+      metadata: imageData.metadata,
+      migrationStatus: imageData.migrationStatus
     };
 
-    //Save Function
+    // Save user
     await user.save();
+    
+    console.log('✅ Profile picture updated successfully');
+    
     return res.status(200).send({
       success: true,
       message: "User Profile Pic Updated Successfully",
+      profilePic: {
+        url: user.profilePic.url,
+        cloudinaryUrl: user.profilePic.cloudinaryUrl,
+        storageType: user.profilePic.storageType
+      }
     });
   } catch (error) {
-    console.log(error);
+    console.error('❌ Error in updateProfilePicController:', error);
     return res.status(500).send({
       success: false,
-      message: `Error in Get Update Profile Pic API: ${console.log(error)}`,
-      error,
+      message: `Error in Update Profile Pic API: ${error.message}`,
+      error: error.message,
     });
   }
 };

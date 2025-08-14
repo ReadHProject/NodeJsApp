@@ -39,12 +39,35 @@ const userSchema = new mongoose.Schema(
       required: [true, "phone is required"],
     },
     profilePic: {
-      public_id: {
-        type: String,
+      // Legacy fields for backward compatibility
+      public_id: { type: String, default: null },
+      url: { type: String, default: null },
+      
+      // Enhanced hybrid storage fields (backward compatible)
+      localPath: { type: String, default: null },
+      cloudinaryUrl: { type: String, default: null },
+      filename: { type: String, default: null },
+      originalName: { type: String, default: null },
+      uploadedAt: { type: Date, default: Date.now },
+      isCloudinaryUploaded: { type: Boolean, default: false },
+      storageType: { type: String, enum: ['local', 'cloudinary', 'hybrid', 'legacy'], default: 'local' },
+      cloudinaryUploadedAt: { type: Date, default: null },
+      
+      // Metadata for better file management
+      metadata: {
+        size: { type: Number, default: null },
+        mimetype: { type: String, default: null },
+        width: { type: Number, default: null },
+        height: { type: Number, default: null },
+        format: { type: String, default: null }
       },
-      url: {
+      
+      // Migration status for data migration purposes
+      migrationStatus: {
         type: String,
-      },
+        enum: ['pending', 'migrating', 'completed', 'failed', 'not_required'],
+        default: 'not_required'
+      }
     },
     savedAddresses: {
       type: Array,
