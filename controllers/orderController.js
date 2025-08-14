@@ -1,6 +1,7 @@
 import orderModel from "../models/orderModel.js";
 import productModel from "../models/productModel.js";
 import { stripe } from "../server.js";
+import { sendOrderNotificationController } from "./notificationController.js";
 
 //CREATE ORDER
 export const createOrderController = async (req, res) => {
@@ -57,6 +58,27 @@ export const createOrderController = async (req, res) => {
         { $inc: { stock: -quantityOrdered } }, // safely decrease stock
         { new: true, runValidators: false } // avoid validation errors
       );
+    }
+
+    // 📱 Send push notification for order confirmation
+    try {
+      const notificationReq = {
+        body: {
+          userId: req.user._id,
+          orderId: newOrder._id,
+          type: 'confirmation'
+        }
+      };
+      
+      // Create a mock response object for the notification controller
+      const notificationRes = {
+        status: (code) => ({ send: () => {} })
+      };
+      
+      await sendOrderNotificationController(notificationReq, notificationRes);
+    } catch (notificationError) {
+      console.log('⚠️ Error sending order confirmation notification:', notificationError.message);
+      // Don't fail the order creation if notification fails
     }
 
     return res.status(201).send({
@@ -285,6 +307,32 @@ export const updateOrderStatusController = async (req, res) => {
 
     await order.save();
 
+    // 📱 Send push notification for order status update
+    try {
+      let notificationType = 'shipping'; // default
+      if (orderStatus.toLowerCase() === 'shipped') {
+        notificationType = 'shipping';
+      } else if (orderStatus.toLowerCase() === 'delivered') {
+        notificationType = 'delivery';
+      }
+
+      const notificationReq = {
+        body: {
+          userId: order.user,
+          orderId: order._id,
+          type: notificationType
+        }
+      };
+      
+      const notificationRes = {
+        status: (code) => ({ send: () => {} })
+      };
+      
+      await sendOrderNotificationController(notificationReq, notificationRes);
+    } catch (notificationError) {
+      console.log('⚠️ Error sending order status notification:', notificationError.message);
+    }
+
     res.status(200).json({
       success: true,
       message: "Order status updated successfully",
@@ -324,6 +372,32 @@ export const changeOrderStatusController = async (req, res) => {
     }
 
     await order.save();
+
+    // 📱 Send push notification for order status update
+    try {
+      let notificationType = 'shipping';
+      if (order.orderStatus === 'shipped') {
+        notificationType = 'shipping';
+      } else if (order.orderStatus === 'delivered') {
+        notificationType = 'delivery';
+      }
+
+      const notificationReq = {
+        body: {
+          userId: order.user,
+          orderId: order._id,
+          type: notificationType
+        }
+      };
+      
+      const notificationRes = {
+        status: (code) => ({ send: () => {} })
+      };
+      
+      await sendOrderNotificationController(notificationReq, notificationRes);
+    } catch (notificationError) {
+      console.log('⚠️ Error sending order status notification:', notificationError.message);
+    }
 
     res.status(200).json({
       success: true,

@@ -96,6 +96,41 @@ const userSchema = new mongoose.Schema(
     resetPasswordOtpExpires: {
       type: Date,
     },
+    // Notification fields
+    pushTokens: [{
+      token: { type: String, required: true },
+      deviceInfo: {
+        platform: { type: String, required: true }, // 'ios' | 'android' | 'web'
+        deviceName: { type: String },
+        deviceType: { type: String } // 'phone' | 'tablet' | 'desktop'
+      },
+      isActive: { type: Boolean, default: true },
+      lastUsed: { type: Date, default: Date.now },
+      createdAt: { type: Date, default: Date.now }
+    }],
+    notificationPreferences: {
+      // Transactional notifications (usually always enabled)
+      orderUpdates: { type: Boolean, default: true },
+      paymentConfirmations: { type: Boolean, default: true },
+      shippingUpdates: { type: Boolean, default: true },
+      
+      // Marketing notifications (user can opt out)
+      promotions: { type: Boolean, default: true },
+      newProducts: { type: Boolean, default: true },
+      flashSales: { type: Boolean, default: true },
+      
+      // Engagement notifications
+      cartReminders: { type: Boolean, default: true },
+      reviewRequests: { type: Boolean, default: true },
+      wishlistUpdates: { type: Boolean, default: true },
+      
+      // Notification timing
+      quietHours: {
+        enabled: { type: Boolean, default: false },
+        startTime: { type: String, default: '22:00' }, // 10 PM
+        endTime: { type: String, default: '08:00' }    // 8 AM
+      }
+    },
   },
   { timestamps: true }
 );
