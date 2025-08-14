@@ -8,7 +8,7 @@ import {
   markNotificationReadController,
   sendOrderNotificationController,
 } from '../controllers/notificationController.js';
-import { requireSignIn, isAdmin } from '../middlewares/authMiddleware.js';
+import { isAuth, isAdmin } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
@@ -20,27 +20,27 @@ router.post('/register-token', registerPushTokenController);
 // PROTECTED ROUTES (authentication required)
 
 // Send single notification (admin only)
-router.post('/send', requireSignIn, isAdmin, sendPushNotificationController);
+router.post('/send', isAuth, isAdmin, sendPushNotificationController);
 
 // Send bulk notifications (admin only)
-router.post('/send-bulk', requireSignIn, isAdmin, sendBulkNotificationController);
+router.post('/send-bulk', isAuth, isAdmin, sendBulkNotificationController);
 
 // Send order-related notifications (admin only)
-router.post('/send-order', requireSignIn, isAdmin, sendOrderNotificationController);
+router.post('/send-order', isAuth, isAdmin, sendOrderNotificationController);
 
 // Get user notifications
-router.get('/user/:userId', requireSignIn, getUserNotificationsController);
+router.get('/user/:userId', isAuth, getUserNotificationsController);
 
 // Update notification preferences
-router.put('/preferences', requireSignIn, updatePreferencesController);
+router.put('/preferences', isAuth, updatePreferencesController);
 
 // Mark notification as read
-router.put('/read/:notificationId', requireSignIn, markNotificationReadController);
+router.put('/read/:notificationId', isAuth, markNotificationReadController);
 
 // ADMIN ROUTES (admin authentication required)
 
 // Get notification analytics (future feature)
-router.get('/analytics', requireSignIn, isAdmin, (req, res) => {
+router.get('/analytics', isAuth, isAdmin, (req, res) => {
   res.status(200).send({
     success: true,
     message: 'Analytics endpoint - coming soon',
@@ -48,7 +48,7 @@ router.get('/analytics', requireSignIn, isAdmin, (req, res) => {
 });
 
 // Get all notifications (admin view)
-router.get('/admin/all', requireSignIn, isAdmin, async (req, res) => {
+router.get('/admin/all', isAuth, isAdmin, async (req, res) => {
   try {
     const { page = 1, limit = 50, type, status } = req.query;
     const skip = (page - 1) * limit;
