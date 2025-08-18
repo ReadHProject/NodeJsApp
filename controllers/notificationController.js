@@ -104,13 +104,28 @@ export const registerPushTokenController = async (req, res) => {
         user.pushTokens[existingTokenIndex].lastUsed = new Date();
         user.pushTokens[existingTokenIndex].isActive = true;
         if (deviceInfo) {
-          user.pushTokens[existingTokenIndex].deviceInfo = deviceInfo;
+          // Ensure deviceInfo has required platform field
+          const completeDeviceInfo = {
+            platform: deviceInfo?.platform || user.pushTokens[existingTokenIndex].deviceInfo?.platform || 'unknown',
+            deviceName: deviceInfo?.deviceName || user.pushTokens[existingTokenIndex].deviceInfo?.deviceName || 'Unknown Device',
+            deviceType: deviceInfo?.deviceType || user.pushTokens[existingTokenIndex].deviceInfo?.deviceType || 'phone',
+            ...deviceInfo
+          };
+          user.pushTokens[existingTokenIndex].deviceInfo = completeDeviceInfo;
         }
       } else {
         // Add new token (store the normalized token)
+        // Ensure deviceInfo has required platform field
+        const completeDeviceInfo = {
+          platform: deviceInfo?.platform || 'unknown',
+          deviceName: deviceInfo?.deviceName || 'Unknown Device',
+          deviceType: deviceInfo?.deviceType || 'phone',
+          ...deviceInfo
+        };
+        
         user.pushTokens.push({
           token: validToken,
-          deviceInfo: deviceInfo || {},
+          deviceInfo: completeDeviceInfo,
           isActive: true,
           lastUsed: new Date(),
           createdAt: new Date()
