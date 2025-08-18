@@ -10,13 +10,76 @@ const expo = new Expo();
 export const registerPushTokenController = async (req, res) => {
   try {
     const { pushToken, userId, deviceInfo } = req.body;
+    
+    // Debug logging
+    console.log('📝 Received push token registration request:');
+    console.log(`   pushToken: ${pushToken}`);
+    console.log(`   pushToken type: ${typeof pushToken}`);
+    console.log(`   pushToken length: ${pushToken ? pushToken.length : 'N/A'}`);
+    console.log(`   userId: ${userId}`);
 
     // Validate push token format
-    if (!Expo.isExpoPushToken(pushToken)) {
+    let validToken = pushToken;
+    
+    // Check if the token is in the correct format
+    // Accept both ExponentPushToken and ExpoPushToken formats
+    console.log(`🔍 Testing token validity: ${Expo.isExpoPushToken(pushToken)}`);
+    
+    if (!pushToken || typeof pushToken !== 'string') {
+      console.error(`❌ Push token is missing or not a string: ${pushToken}`);
       return res.status(400).send({
         success: false,
-        message: 'Invalid push token format',
+        message: 'Push token is required and must be a string',
       });
+    }
+    
+    // First check if the token is already valid
+    if (Expo.isExpoPushToken(pushToken)) {
+      validToken = pushToken;
+      console.log(`✅ Token is valid as-is: ${pushToken}`);
+    } else {
+      console.log(`❌ Initial validation failed, attempting normalization...`);
+      
+      // If token doesn't have the expected format, try to normalize it
+      // Extract token from brackets if it's in the format ExponentPushToken[xyz]
+      const tokenMatch = pushToken.match(/(?:ExponentPushToken|ExpoPushToken)\[(.*?)\]/);
+      if (tokenMatch && tokenMatch[1]) {
+        // Try with the standardized format
+        validToken = `ExponentPushToken[${tokenMatch[1]}]`;
+        console.log(`🔧 Normalized token: ${validToken}`);
+        
+        // Check if the normalized token is valid
+        if (!Expo.isExpoPushToken(validToken)) {
+          console.error(`❌ Normalized token validation failed: ${validToken}`);
+          return res.status(400).send({
+            success: false,
+            message: 'Invalid push token format after normalization',
+          });
+        }
+        console.log(`✅ Normalized token is valid!`);
+      } else {
+        // Try to create a valid token if it looks like a raw token
+        const cleanToken = pushToken.trim();
+        if (cleanToken.length > 10 && !cleanToken.includes('[') && !cleanToken.includes(']')) {
+          validToken = `ExponentPushToken[${cleanToken}]`;
+          console.log(`🔧 Created token from raw string: ${validToken}`);
+          
+          if (!Expo.isExpoPushToken(validToken)) {
+            console.error(`❌ Created token validation failed: ${validToken}`);
+            return res.status(400).send({
+              success: false,
+              message: 'Unable to create valid push token from provided value',
+            });
+          }
+          console.log(`✅ Created token is valid!`);
+        } else {
+          console.error(`❌ Unable to normalize push token: ${pushToken}`);
+          return res.status(400).send({
+            success: false,
+            message: 'Invalid push token format - unable to normalize',
+          });
+        }
+      }
     }
 
     let user;
@@ -31,9 +94,9 @@ export const registerPushTokenController = async (req, res) => {
         });
       }
 
-      // Check if token already exists for this user
+      // Check if token already exists for this user (use normalized token for storage)
       const existingTokenIndex = user.pushTokens.findIndex(
-        token => token.token === pushToken
+        token => token.token === validToken
       );
 
       if (existingTokenIndex !== -1) {
@@ -44,9 +107,9 @@ export const registerPushTokenController = async (req, res) => {
           user.pushTokens[existingTokenIndex].deviceInfo = deviceInfo;
         }
       } else {
-        // Add new token
+        // Add new token (store the normalized token)
         user.pushTokens.push({
-          token: pushToken,
+          token: validToken,
           deviceInfo: deviceInfo || {},
           isActive: true,
           lastUsed: new Date(),
