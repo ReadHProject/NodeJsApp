@@ -127,6 +127,10 @@ export const loginController = async (req, res) => {
 
     //TOKEN
     const token = user.generateToken();
+    
+    // Update last login timestamp
+    user.lastLogin = new Date();
+    await user.save();
 
     // Set cookie for backward compatibility
     res.cookie("token", token, {
@@ -745,6 +749,83 @@ export const updateUserRoleController = async (req, res) => {
       success: false,
       message: "Error in updateUserRole API",
       error,
+    });
+  }
+};
+
+//GET ADMIN STATS - ADMIN
+export const getAdminStatsController = async (req, res) => {
+  try {
+    // Get all users
+    const allUsers = await userModel.find({}, { password: 0 });
+    const totalUsers = allUsers.length;
+    
+    // Calculate active users (users who have logged in within last 30 days)
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const activeUsers = allUsers.filter(user => {
+      if (!user.lastLogin) {
+        // If no lastLogin, consider user active if created within last 30 days
+        const createdAt = new Date(user.createdAt || user._id.getTimestamp());
+        return createdAt > thirtyDaysAgo;
+      }
+      const lastLogin = new Date(user.lastLogin);
+      return lastLogin > thirtyDaysAgo;
+    }).length;
+    
+    // Calculate blocked users
+    const blockedUsers = allUsers.filter(user => 
+      user.blocked === true || user.blocked === "true" || user.blocked === "yes" || user.blocked === 1
+    ).length;
+    
+    // Calculate admin users
+    const adminUsers = allUsers.filter(user => 
+      user.role === "admin" || user.role === "ADMIN"
+    ).length;
+    
+    // Calculate regular users (non-admin, non-blocked)
+    const regularUsers = allUsers.filter(user => {
+      const isAdmin = user.role === "admin" || user.role === "ADMIN";
+      const isBlocked = user.blocked === true || user.blocked === "true" || user.blocked === "yes" || user.blocked === 1;
+      return !isAdmin && !isBlocked;
+    }).length;
+    
+    // Calculate users with push tokens (users who can receive notifications)
+    const usersWithPushTokens = allUsers.filter(user => 
+      user.pushTokens && user.pushTokens.length > 0
+    ).length;
+    
+    // Calculate new users this month
+    const oneMonthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const newUsersThisMonth = allUsers.filter(user => {
+      const createdAt = new Date(user.createdAt || user._id.getTimestamp());
+      return createdAt > oneMonthAgo;
+    }).length;
+    
+    const stats = {
+      totalUsers,
+      activeUsers,
+      blockedUsers,
+      adminUsers,
+      regularUsers,
+      usersWithPushTokens,
+      newUsersThisMonth,
+      // Additional calculated metrics
+      activeUserPercentage: totalUsers > 0 ? Math.round((activeUsers / totalUsers) * 100) : 0,
+      pushTokenCoverage: totalUsers > 0 ? Math.round((usersWithPushTokens / totalUsers) * 100) : 0,
+      lastUpdated: new Date().toISOString()
+    };
+    
+    return res.status(200).send({
+      success: true,
+      message: "Admin stats fetched successfully",
+      data: stats
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
+      success: false,
+      message: "Error in Get Admin Stats API",
+      error: error.message,
     });
   }
 };

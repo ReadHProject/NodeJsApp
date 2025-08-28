@@ -603,6 +603,127 @@ export const sendOrderNotificationController = async (req, res) => {
   }
 };
 
+// Get notification analytics - ADMIN
+export const getNotificationAnalyticsController = async (req, res) => {
+  try {
+    const { timeRange = '30d' } = req.query;
+    
+    // Calculate date range
+    let startDate;
+    switch (timeRange) {
+      case '7d':
+        startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case '30d':
+        startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        break;
+      case '90d':
+        startDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+        break;
+      default:
+        startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    }
+    
+    const endDate = new Date();
+    
+    // Get all notifications within the time range
+    const notifications = await notificationModel.find({
+      createdAt: { $gte: startDate, $lte: endDate }
+    });
+    
+    // Calculate metrics
+    const totalSent = notifications.length;
+    const successfulSends = notifications.filter(n => n.deliveryStatus === 'sent' || n.deliveryStatus === 'delivered').length;
+    const failedSends = notifications.filter(n => n.deliveryStatus === 'failed').length;
+    const pendingSends = notifications.filter(n => n.deliveryStatus === 'pending').length;
+    
+    // Calculate read statistics
+    const readNotifications = notifications.filter(n => n.userInteraction?.read === true).length;
+    const clickedNotifications = notifications.filter(n => n.userInteraction?.clicked === true).length;
+    
+    // Calculate open rate
+    const openRate = totalSent > 0 ? Math.round((readNotifications / totalSent) * 100) : 0;
+    const clickRate = totalSent > 0 ? Math.round((clickedNotifications / totalSent) * 100) : 0;
+    
+    // Get notification types breakdown
+    const typeBreakdown = notifications.reduce((acc, notification) => {
+      const type = notification.type || 'other';
+      acc[type] = (acc[type] || 0) + 1;
+      return acc;
+    }, {});
+    
+    // Calculate active campaigns (last 7 days)
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const activeCampaigns = await notificationModel.distinct('metadata.campaignId', {
+      createdAt: { $gte: weekAgo },
+      'metadata.source': 'bulk_campaign'
+    }).then(campaigns => campaigns.length);
+    
+    // Get unique users who received notifications
+    const uniqueUsers = await notificationModel.distinct('userId', {
+      createdAt: { $gte: startDate, $lte: endDate }
+    }).then(users => users.length);
+    
+    // Calculate daily stats for the last 7 days
+    const dailyStats = [];
+    for (let i = 6; i >= 0; i--) {
+      const dayStart = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(dayStart);
+      dayEnd.setHours(23, 59, 59, 999);
+      
+      const dayNotifications = notifications.filter(n => {
+        const createdAt = new Date(n.createdAt);
+        return createdAt >= dayStart && createdAt <= dayEnd;
+      });
+      
+      dailyStats.push({
+        date: dayStart.toISOString().split('T')[0],
+        sent: dayNotifications.length,
+        opened: dayNotifications.filter(n => n.userInteraction?.read === true).length,
+        clicked: dayNotifications.filter(n => n.userInteraction?.clicked === true).length
+      });
+    }
+    
+    const analytics = {
+      totalSent,
+      activeCampaigns,
+      openRate,
+      clickRate,
+      deliveryStats: {
+        successful: successfulSends,
+        failed: failedSends,
+        pending: pendingSends,
+        deliveryRate: totalSent > 0 ? Math.round((successfulSends / totalSent) * 100) : 0
+      },
+      engagement: {
+        totalOpened: readNotifications,
+        totalClicked: clickedNotifications,
+        openRate,
+        clickRate
+      },
+      typeBreakdown,
+      uniqueUsers,
+      dailyStats,
+      timeRange,
+      lastUpdated: new Date().toISOString()
+    };
+    
+    return res.status(200).send({
+      success: true,
+      message: "Notification analytics fetched successfully",
+      data: analytics
+    });
+  } catch (error) {
+    console.error('❌ Error fetching notification analytics:', error);
+    return res.status(500).send({
+      success: false,
+      message: "Error in Get Notification Analytics API",
+      error: error.message,
+    });
+  }
+};
+
 // Helper function to send notification to a specific user
 async function sendNotificationToUser(userId, notificationData) {
   const user = await userModel.findById(userId);

@@ -16,6 +16,7 @@ import {
   deleteUserController,
   updateUserRoleController,
   getProfileController,
+  getAdminStatsController,
 } from "../controllers/userController.js";
 import { isAdmin, isAuth } from "../middlewares/authMiddleware.js";
 import { profileUpload, singleUpload } from "../middlewares/multer.js";
@@ -45,6 +46,9 @@ router.get("/profile", isAuth, getUserProfileController);
 
 // GET ALL USERS - ADMIN
 router.get("/all-users", isAuth, isAdmin, getAllUsersController);
+
+// GET ADMIN STATS - ADMIN
+router.get("/admin-stats", isAuth, isAdmin, getAdminStatsController);
 
 //LOGOUT
 router.get("/logout", isAuth, logoutController);

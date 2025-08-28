@@ -7,6 +7,7 @@ import {
   updatePreferencesController,
   markNotificationReadController,
   sendOrderNotificationController,
+  getNotificationAnalyticsController,
 } from '../controllers/notificationController.js';
 import { isAuth, isAdmin } from '../middlewares/authMiddleware.js';
 
@@ -39,13 +40,8 @@ router.put('/read/:notificationId', isAuth, markNotificationReadController);
 
 // ADMIN ROUTES (admin authentication required)
 
-// Get notification analytics (future feature)
-router.get('/analytics', isAuth, isAdmin, (req, res) => {
-  res.status(200).send({
-    success: true,
-    message: 'Analytics endpoint - coming soon',
-  });
-});
+// Get notification analytics - ADMIN
+router.get('/analytics', isAuth, isAdmin, getNotificationAnalyticsController);
 
 // Get all notifications (admin view)
 router.get('/admin/all', isAuth, isAdmin, async (req, res) => {
