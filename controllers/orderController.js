@@ -448,6 +448,7 @@ export const requestReturnController = async (req, res) => {
   try {
     const { id } = req.params;
     const { reason, description } = req.body;
+    console.log(`[RequestReturn] ID: ${id}, Reason: ${reason}, Desc: ${description}`);
 
     // Validation
     if (!reason || !description) {
@@ -518,6 +519,7 @@ export const requestReturnController = async (req, res) => {
     };
 
     await order.save();
+    console.log(`[RequestReturn] Saved successfully for order ${id}`);
 
     res.status(200).json({
       success: true,
@@ -539,6 +541,7 @@ export const requestReplaceController = async (req, res) => {
   try {
     const { id } = req.params;
     const { reason, description } = req.body;
+    console.log(`[RequestReplace] ID: ${id}, Reason: ${reason}, Desc: ${description}`);
 
     // Validation
     if (!reason || !description) {
@@ -609,6 +612,7 @@ export const requestReplaceController = async (req, res) => {
     };
 
     await order.save();
+    console.log(`[RequestReplace] Saved successfully for order ${id}`);
 
     res.status(200).json({
       success: true,
