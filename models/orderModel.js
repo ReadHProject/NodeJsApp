@@ -107,6 +107,48 @@ orderSchema.virtual("orderAge").get(function () {
   return Math.floor((Date.now() - this.createdAt) / (1000 * 60 * 60 * 24));
 });
 
+// Virtual property to check if return is allowed (7 days from delivery)
+orderSchema.virtual("canReturn").get(function () {
+  if (this.orderStatus !== "delivered" || !this.deliveredAt) {
+    return false;
+  }
+  const daysSinceDelivery = Math.floor(
+    (Date.now() - new Date(this.deliveredAt).getTime()) / (1000 * 60 * 60 * 24)
+  );
+  return daysSinceDelivery <= 7;
+});
+
+// Virtual property to check if replace is allowed (15 days from delivery)
+orderSchema.virtual("canReplace").get(function () {
+  if (this.orderStatus !== "delivered" || !this.deliveredAt) {
+    return false;
+  }
+  const daysSinceDelivery = Math.floor(
+    (Date.now() - new Date(this.deliveredAt).getTime()) / (1000 * 60 * 60 * 24)
+  );
+  return daysSinceDelivery <= 15;
+});
+
+// Virtual property for return window closing date
+orderSchema.virtual("returnWindowClosesAt").get(function () {
+  if (!this.deliveredAt) {
+    return null;
+  }
+  const closingDate = new Date(this.deliveredAt);
+  closingDate.setDate(closingDate.getDate() + 7);
+  return closingDate;
+});
+
+// Virtual property for replace window closing date
+orderSchema.virtual("replaceWindowClosesAt").get(function () {
+  if (!this.deliveredAt) {
+    return null;
+  }
+  const closingDate = new Date(this.deliveredAt);
+  closingDate.setDate(closingDate.getDate() + 15);
+  return closingDate;
+});
+
 // Index for faster queries
 orderSchema.index({ user: 1, createdAt: -1 });
 orderSchema.index({ orderStatus: 1 });

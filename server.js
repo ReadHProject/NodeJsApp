@@ -44,7 +44,7 @@ app.use(helmet()); // security middleware
 app.use(morgan("dev")); // get the API request detail on terminal
 app.use(express.json()); //json middleware which express own middleware and use to receive json data
 app.use(express.urlencoded({ extended: true })); //urlencoded middleware
-app.use(cors()); // for Cross origin support
+// app.use(cors()); // REMOVED: This wildcard CORS conflicts with the credentials-enabled CORS below
 app.use(cookieParser()); // for cookie parser
 // app.use(
 //   mongoSanitize({

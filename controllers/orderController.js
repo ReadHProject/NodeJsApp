@@ -69,12 +69,12 @@ export const createOrderController = async (req, res) => {
           type: 'confirmation'
         }
       };
-      
+
       // Create a mock response object for the notification controller
       const notificationRes = {
-        status: (code) => ({ send: () => {} })
+        status: (code) => ({ send: () => { } })
       };
-      
+
       await sendOrderNotificationController(notificationReq, notificationRes);
     } catch (notificationError) {
       console.log('⚠️ Error sending order confirmation notification:', notificationError.message);
@@ -155,10 +155,13 @@ export const singleOrderDetailsController = async (req, res) => {
       });
     }
 
+    // Convert to object with virtuals for return/replace eligibility
+    const orderWithVirtuals = order.toObject({ virtuals: true });
+
     return res.status(200).send({
       success: true,
       message: "Single Order Details Fetched Successfully",
-      order,
+      order: orderWithVirtuals,
     });
   } catch (error) {
     console.log(error);
@@ -323,11 +326,11 @@ export const updateOrderStatusController = async (req, res) => {
           type: notificationType
         }
       };
-      
+
       const notificationRes = {
-        status: (code) => ({ send: () => {} })
+        status: (code) => ({ send: () => { } })
       };
-      
+
       await sendOrderNotificationController(notificationReq, notificationRes);
     } catch (notificationError) {
       console.log('⚠️ Error sending order status notification:', notificationError.message);
@@ -389,11 +392,11 @@ export const changeOrderStatusController = async (req, res) => {
           type: notificationType
         }
       };
-      
+
       const notificationRes = {
-        status: (code) => ({ send: () => {} })
+        status: (code) => ({ send: () => { } })
       };
-      
+
       await sendOrderNotificationController(notificationReq, notificationRes);
     } catch (notificationError) {
       console.log('⚠️ Error sending order status notification:', notificationError.message);
