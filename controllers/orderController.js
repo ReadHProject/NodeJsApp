@@ -442,3 +442,185 @@ export const deleteOrderController = async (req, res) => {
     });
   }
 };
+
+// 4️⃣ Request Return
+export const requestReturnController = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason, description } = req.body;
+
+    // Validation
+    if (!reason || !description) {
+      return res.status(400).json({
+        success: false,
+        message: "Reason and description are required",
+      });
+    }
+
+    // Find order
+    const order = await orderModel.findById(id);
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    // Check if order belongs to user
+    if (order.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized access to this order",
+      });
+    }
+
+    // Check if order is delivered
+    if (order.orderStatus !== "delivered") {
+      return res.status(400).json({
+        success: false,
+        message: "Only delivered orders can be returned",
+      });
+    }
+
+    // Check if within return window (7 days)
+    if (!order.deliveredAt) {
+      return res.status(400).json({
+        success: false,
+        message: "Delivery date not found",
+      });
+    }
+
+    const daysSinceDelivery = Math.floor(
+      (Date.now() - new Date(order.deliveredAt).getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    if (daysSinceDelivery > 7) {
+      return res.status(400).json({
+        success: false,
+        message: "Return window has closed. Returns are only allowed within 7 days of delivery.",
+      });
+    }
+
+    // Check if return already requested
+    if (order.returnRequest && order.returnRequest.status !== "none") {
+      return res.status(400).json({
+        success: false,
+        message: `Return request already ${order.returnRequest.status}`,
+      });
+    }
+
+    // Update order with return request
+    order.returnRequest = {
+      status: "pending",
+      reason,
+      description,
+      requestedAt: new Date(),
+    };
+
+    await order.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Return request submitted successfully",
+      order,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to submit return request",
+      error: error.message,
+    });
+  }
+};
+
+// 5️⃣ Request Replace
+export const requestReplaceController = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason, description } = req.body;
+
+    // Validation
+    if (!reason || !description) {
+      return res.status(400).json({
+        success: false,
+        message: "Reason and description are required",
+      });
+    }
+
+    // Find order
+    const order = await orderModel.findById(id);
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    // Check if order belongs to user
+    if (order.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized access to this order",
+      });
+    }
+
+    // Check if order is delivered
+    if (order.orderStatus !== "delivered") {
+      return res.status(400).json({
+        success: false,
+        message: "Only delivered orders can be replaced",
+      });
+    }
+
+    // Check if within replace window (15 days)
+    if (!order.deliveredAt) {
+      return res.status(400).json({
+        success: false,
+        message: "Delivery date not found",
+      });
+    }
+
+    const daysSinceDelivery = Math.floor(
+      (Date.now() - new Date(order.deliveredAt).getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    if (daysSinceDelivery > 15) {
+      return res.status(400).json({
+        success: false,
+        message: "Replace window has closed. Replacements are only allowed within 15 days of delivery.",
+      });
+    }
+
+    // Check if replace already requested
+    if (order.replaceRequest && order.replaceRequest.status !== "none") {
+      return res.status(400).json({
+        success: false,
+        message: `Replace request already ${order.replaceRequest.status}`,
+      });
+    }
+
+    // Update order with replace request
+    order.replaceRequest = {
+      status: "pending",
+      reason,
+      description,
+      requestedAt: new Date(),
+    };
+
+    await order.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Replace request submitted successfully",
+      order,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to submit replace request",
+      error: error.message,
+    });
+  }
+};

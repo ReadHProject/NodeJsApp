@@ -98,6 +98,48 @@ const orderSchema = new mongoose.Schema(
       trackingNumber: String,
       trackingUrl: String,
     },
+    returnRequest: {
+      status: {
+        type: String,
+        enum: ["none", "pending", "approved", "rejected", "completed"],
+        default: "none",
+      },
+      reason: {
+        type: String,
+        default: "",
+      },
+      description: {
+        type: String,
+        default: "",
+      },
+      requestedAt: Date,
+      processedAt: Date,
+      processedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Users",
+      },
+    },
+    replaceRequest: {
+      status: {
+        type: String,
+        enum: ["none", "pending", "approved", "rejected", "completed"],
+        default: "none",
+      },
+      reason: {
+        type: String,
+        default: "",
+      },
+      description: {
+        type: String,
+        default: "",
+      },
+      requestedAt: Date,
+      processedAt: Date,
+      processedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Users",
+      },
+    },
   },
   { timestamps: true }
 );

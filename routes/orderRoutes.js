@@ -9,6 +9,8 @@ import {
   paymentsController,
   singleOrderDetailsController,
   updateOrderStatusController,
+  requestReturnController,
+  requestReplaceController,
 } from "../controllers/orderController.js";
 
 const router = express.Router();
@@ -27,6 +29,12 @@ router.get("/my-orders/:id", isAuth, singleOrderDetailsController);
 
 //ACCEPT PAYMENTS
 router.post("/payments", isAuth, paymentsController);
+
+//REQUEST RETURN
+router.post("/request-return/:id", isAuth, requestReturnController);
+
+//REQUEST REPLACE
+router.post("/request-replace/:id", isAuth, requestReplaceController);
 
 //***************************ADMIN PART********************************/
 //GET ALL ORDERS
