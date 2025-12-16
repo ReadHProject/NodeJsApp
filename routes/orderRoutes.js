@@ -11,6 +11,8 @@ import {
   updateOrderStatusController,
   requestReturnController,
   requestReplaceController,
+  processReturnRequestController,
+  processReplaceRequestController,
 } from "../controllers/orderController.js";
 
 const router = express.Router();
@@ -53,5 +55,11 @@ router.put(
 
 // 3️⃣ Delete Order
 router.delete("/admin/:id", isAuth, isAdmin, deleteOrderController);
+
+// 4️⃣ Process Return Request
+router.put("/admin/return/:id", isAuth, isAdmin, processReturnRequestController);
+
+// 5️⃣ Process Replace Request
+router.put("/admin/replace/:id", isAuth, isAdmin, processReplaceRequestController);
 
 export default router;

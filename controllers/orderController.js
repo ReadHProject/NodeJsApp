@@ -666,3 +666,118 @@ export const requestReplaceController = async (req, res) => {
     });
   }
 };
+// 6️⃣ Process Return Request (Admin)
+export const processReturnRequestController = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body; // "approved" or "rejected"
+
+    const order = await orderModel.findById(id);
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    if (!order.returnRequest || order.returnRequest.status === "none") {
+      return res.status(400).json({ success: false, message: "No return request found" });
+    }
+
+    order.returnRequest.status = status;
+    order.returnRequest.processedAt = new Date();
+    order.returnRequest.processedBy = req.user._id;
+
+    if (status === "approved") {
+      order.orderStatus = "return_approved"; // Or whatever status you use for returns
+      // You might want to trigger refund logic here if applicable
+    }
+
+    await order.save();
+
+    // 📱 Send push notification
+    try {
+      const notificationReq = {
+        body: {
+          userId: order.user,
+          orderId: order._id,
+          type: 'order_update', // Generic update, or create specific 'return_approved'/'return_rejected'
+          title: `Return Request ${status === 'approved' ? 'Approved' : 'Rejected'}`,
+          message: `Your return request for order #${order._id.toString().substr(-6)} has been ${status}.`
+        }
+      };
+      const notificationRes = { status: () => ({ send: () => { } }) };
+      await sendOrderNotificationController(notificationReq, notificationRes);
+    } catch (error) {
+      console.log('Notification error:', error.message);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Return request ${status} successfully`,
+      order,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to process return request",
+      error: error.message,
+    });
+  }
+};
+
+// 7️⃣ Process Replace Request (Admin)
+export const processReplaceRequestController = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body; // "approved" or "rejected"
+
+    const order = await orderModel.findById(id);
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    if (!order.replaceRequest || order.replaceRequest.status === "none") {
+      return res.status(400).json({ success: false, message: "No replace request found" });
+    }
+
+    order.replaceRequest.status = status;
+    order.replaceRequest.processedAt = new Date();
+    order.replaceRequest.processedBy = req.user._id;
+
+    if (status === "approved") {
+      order.orderStatus = "replace_approved"; // Or whatever status you use
+      // You might want to trigger replacement order creation logic here
+    }
+
+    await order.save();
+
+    // 📱 Send push notification
+    try {
+      const notificationReq = {
+        body: {
+          userId: order.user,
+          orderId: order._id,
+          type: 'order_update',
+          title: `Replacement Request ${status === 'approved' ? 'Approved' : 'Rejected'}`,
+          message: `Your replacement request for order #${order._id.toString().substr(-6)} has been ${status}.`
+        }
+      };
+      const notificationRes = { status: () => ({ send: () => { } }) };
+      await sendOrderNotificationController(notificationReq, notificationRes);
+    } catch (error) {
+      console.log('Notification error:', error.message);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Replace request ${status} successfully`,
+      order,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to process replace request",
+      error: error.message,
+    });
+  }
+};
