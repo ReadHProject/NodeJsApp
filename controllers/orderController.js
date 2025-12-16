@@ -718,7 +718,7 @@ export const processReturnRequestController = async (req, res) => {
     console.error(error);
     res.status(500).json({
       success: false,
-      message: "Failed to process return request",
+      message: `Failed to process return request: ${error.message}`,
       error: error.message,
     });
   }
@@ -776,7 +776,7 @@ export const processReplaceRequestController = async (req, res) => {
     console.error(error);
     res.status(500).json({
       success: false,
-      message: "Failed to process replace request",
+      message: `Failed to process replace request: ${error.message}`,
       error: error.message,
     });
   }
