@@ -10,7 +10,7 @@ const expo = new Expo();
 export const registerPushTokenController = async (req, res) => {
   try {
     const { pushToken, userId, deviceInfo } = req.body;
-    
+
     // Debug logging
     console.log('📝 Received push token registration request:');
     console.log(`   pushToken: ${pushToken}`);
@@ -20,11 +20,11 @@ export const registerPushTokenController = async (req, res) => {
 
     // Validate push token format
     let validToken = pushToken;
-    
+
     // Check if the token is in the correct format
     // Accept both ExponentPushToken and ExpoPushToken formats
     console.log(`🔍 Testing token validity: ${Expo.isExpoPushToken(pushToken)}`);
-    
+
     if (!pushToken || typeof pushToken !== 'string') {
       console.error(`❌ Push token is missing or not a string: ${pushToken}`);
       return res.status(400).send({
@@ -32,14 +32,14 @@ export const registerPushTokenController = async (req, res) => {
         message: 'Push token is required and must be a string',
       });
     }
-    
+
     // First check if the token is already valid
     if (Expo.isExpoPushToken(pushToken)) {
       validToken = pushToken;
       console.log(`✅ Token is valid as-is: ${pushToken}`);
     } else {
       console.log(`❌ Initial validation failed, attempting normalization...`);
-      
+
       // If token doesn't have the expected format, try to normalize it
       // Extract token from brackets if it's in the format ExponentPushToken[xyz]
       const tokenMatch = pushToken.match(/(?:ExponentPushToken|ExpoPushToken)\[(.*?)\]/);
@@ -47,7 +47,7 @@ export const registerPushTokenController = async (req, res) => {
         // Try with the standardized format
         validToken = `ExponentPushToken[${tokenMatch[1]}]`;
         console.log(`🔧 Normalized token: ${validToken}`);
-        
+
         // Check if the normalized token is valid
         if (!Expo.isExpoPushToken(validToken)) {
           console.error(`❌ Normalized token validation failed: ${validToken}`);
@@ -63,7 +63,7 @@ export const registerPushTokenController = async (req, res) => {
         if (cleanToken.length > 10 && !cleanToken.includes('[') && !cleanToken.includes(']')) {
           validToken = `ExponentPushToken[${cleanToken}]`;
           console.log(`🔧 Created token from raw string: ${validToken}`);
-          
+
           if (!Expo.isExpoPushToken(validToken)) {
             console.error(`❌ Created token validation failed: ${validToken}`);
             return res.status(400).send({
@@ -83,7 +83,7 @@ export const registerPushTokenController = async (req, res) => {
     }
 
     let user;
-    
+
     if (userId) {
       // Registered user - save to user document
       user = await userModel.findById(userId);
@@ -122,7 +122,7 @@ export const registerPushTokenController = async (req, res) => {
           deviceType: deviceInfo?.deviceType || 'phone',
           ...deviceInfo
         };
-        
+
         user.pushTokens.push({
           token: validToken,
           deviceInfo: completeDeviceInfo,
@@ -133,7 +133,7 @@ export const registerPushTokenController = async (req, res) => {
       }
 
       await user.save();
-      
+
       console.log(`✅ Push token registered for user: ${user.email}`);
     } else {
       // Anonymous user - we could store in a separate collection or handle differently
@@ -283,10 +283,10 @@ export const sendBulkNotificationController = async (req, res) => {
     }
 
     let users;
-    
+
     if (userIds) {
       // Send to specific users
-      users = await userModel.find({ 
+      users = await userModel.find({
         _id: { $in: userIds },
         pushTokens: { $exists: true, $ne: [] }
       });
@@ -322,7 +322,7 @@ export const sendBulkNotificationController = async (req, res) => {
     const batchSize = 100;
     for (let i = 0; i < users.length; i += batchSize) {
       const batch = users.slice(i, i + batchSize);
-      
+
       for (const user of batch) {
         try {
           // Check user preferences
@@ -485,7 +485,7 @@ export const updatePreferencesController = async (req, res) => {
 export const markNotificationReadController = async (req, res) => {
   try {
     const { notificationId } = req.params;
-    
+
     const notification = await notificationModel.findById(notificationId);
     if (!notification) {
       return res.status(404).send({
@@ -535,11 +535,11 @@ function shouldSendNotification(type, preferences) {
 // Helper function to build user query based on filters
 function buildUserQuery(filters) {
   const query = {};
-  
+
   if (filters.city) query.city = filters.city;
   if (filters.country) query.country = filters.country;
   if (filters.role) query.role = filters.role;
-  
+
   return query;
 }
 
@@ -570,6 +570,16 @@ export const sendOrderNotificationController = async (req, res) => {
       order_delivered: {
         title: '✅ Order Delivered!',
         body: `Your order #${order._id.toString().substr(-6)} has been delivered. Enjoy your purchase!`,
+        data: { orderId: order._id, type: 'order_update' }
+      },
+      return_requested: {
+        title: '↩️ Return Requested',
+        body: `We have received your return request for order #${order._id.toString().substr(-6)}. We will update you shortly.`,
+        data: { orderId: order._id, type: 'order_update' }
+      },
+      replace_requested: {
+        title: '🔄 Replacement Requested',
+        body: `We have received your replacement request for order #${order._id.toString().substr(-6)}. We will update you shortly.`,
         data: { orderId: order._id, type: 'order_update' }
       }
     };
@@ -607,7 +617,7 @@ export const sendOrderNotificationController = async (req, res) => {
 export const getNotificationAnalyticsController = async (req, res) => {
   try {
     const { timeRange = '30d' } = req.query;
-    
+
     // Calculate date range
     let startDate;
     switch (timeRange) {
@@ -623,47 +633,47 @@ export const getNotificationAnalyticsController = async (req, res) => {
       default:
         startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     }
-    
+
     const endDate = new Date();
-    
+
     // Get all notifications within the time range
     const notifications = await notificationModel.find({
       createdAt: { $gte: startDate, $lte: endDate }
     });
-    
+
     // Calculate metrics
     const totalSent = notifications.length;
     const successfulSends = notifications.filter(n => n.deliveryStatus === 'sent' || n.deliveryStatus === 'delivered').length;
     const failedSends = notifications.filter(n => n.deliveryStatus === 'failed').length;
     const pendingSends = notifications.filter(n => n.deliveryStatus === 'pending').length;
-    
+
     // Calculate read statistics
     const readNotifications = notifications.filter(n => n.userInteraction?.read === true).length;
     const clickedNotifications = notifications.filter(n => n.userInteraction?.clicked === true).length;
-    
+
     // Calculate open rate
     const openRate = totalSent > 0 ? Math.round((readNotifications / totalSent) * 100) : 0;
     const clickRate = totalSent > 0 ? Math.round((clickedNotifications / totalSent) * 100) : 0;
-    
+
     // Get notification types breakdown
     const typeBreakdown = notifications.reduce((acc, notification) => {
       const type = notification.type || 'other';
       acc[type] = (acc[type] || 0) + 1;
       return acc;
     }, {});
-    
+
     // Calculate active campaigns (last 7 days)
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const activeCampaigns = await notificationModel.distinct('metadata.campaignId', {
       createdAt: { $gte: weekAgo },
       'metadata.source': 'bulk_campaign'
     }).then(campaigns => campaigns.length);
-    
+
     // Get unique users who received notifications
     const uniqueUsers = await notificationModel.distinct('userId', {
       createdAt: { $gte: startDate, $lte: endDate }
     }).then(users => users.length);
-    
+
     // Calculate daily stats for the last 7 days
     const dailyStats = [];
     for (let i = 6; i >= 0; i--) {
@@ -671,12 +681,12 @@ export const getNotificationAnalyticsController = async (req, res) => {
       dayStart.setHours(0, 0, 0, 0);
       const dayEnd = new Date(dayStart);
       dayEnd.setHours(23, 59, 59, 999);
-      
+
       const dayNotifications = notifications.filter(n => {
         const createdAt = new Date(n.createdAt);
         return createdAt >= dayStart && createdAt <= dayEnd;
       });
-      
+
       dailyStats.push({
         date: dayStart.toISOString().split('T')[0],
         sent: dayNotifications.length,
@@ -684,7 +694,7 @@ export const getNotificationAnalyticsController = async (req, res) => {
         clicked: dayNotifications.filter(n => n.userInteraction?.clicked === true).length
       });
     }
-    
+
     const analytics = {
       totalSent,
       activeCampaigns,
@@ -708,7 +718,7 @@ export const getNotificationAnalyticsController = async (req, res) => {
       timeRange,
       lastUpdated: new Date().toISOString()
     };
-    
+
     return res.status(200).send({
       success: true,
       message: "Notification analytics fetched successfully",

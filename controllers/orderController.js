@@ -521,6 +521,25 @@ export const requestReturnController = async (req, res) => {
     await order.save();
     console.log(`[RequestReturn] Saved successfully for order ${id}`);
 
+    // 📱 Send push notification for return request
+    try {
+      const notificationReq = {
+        body: {
+          userId: req.user._id,
+          orderId: order._id,
+          type: 'return_requested'
+        }
+      };
+
+      const notificationRes = {
+        status: (code) => ({ send: () => { } })
+      };
+
+      await sendOrderNotificationController(notificationReq, notificationRes);
+    } catch (notificationError) {
+      console.log('⚠️ Error sending return request notification:', notificationError.message);
+    }
+
     res.status(200).json({
       success: true,
       message: "Return request submitted successfully",
@@ -613,6 +632,25 @@ export const requestReplaceController = async (req, res) => {
 
     await order.save();
     console.log(`[RequestReplace] Saved successfully for order ${id}`);
+
+    // 📱 Send push notification for replace request
+    try {
+      const notificationReq = {
+        body: {
+          userId: req.user._id,
+          orderId: order._id,
+          type: 'replace_requested'
+        }
+      };
+
+      const notificationRes = {
+        status: (code) => ({ send: () => { } })
+      };
+
+      await sendOrderNotificationController(notificationReq, notificationRes);
+    } catch (notificationError) {
+      console.log('⚠️ Error sending replace request notification:', notificationError.message);
+    }
 
     res.status(200).json({
       success: true,
